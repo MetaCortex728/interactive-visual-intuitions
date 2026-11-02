@@ -1,0 +1,13 @@
+{
+  "errors": [],
+  "layout": [],
+  "stories": 8,
+  "widths": [
+    1100,
+    736,
+    390,
+    320
+  ],
+  "threeD": "nonblank, moving, actual mesh endpoints match 54 sticker identities",
+  "controls": "play/pause/step/scrub/select/restore/reduced-motion/offline passed"
+}

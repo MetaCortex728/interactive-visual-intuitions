@@ -1,0 +1,167 @@
+<div id="cube-study">
+  <h2>Shortest path / fastest hands</h2>
+  <div class="viz-controls" id="case-controls" aria-label="Comparison cases"></div>
+  <div class="cs-heading"><span id="case-title"></span><a id="source-link" target="_blank" rel="noreferrer">Source</a></div>
+  <div class="viz-controls">
+    <button class="btn" id="begin" aria-label="Return to scramble" data-tooltip="Return to scramble"><i data-lucide="rotate-ccw"></i></button>
+    <button class="btn" id="back" aria-label="Previous move" data-tooltip="Previous move"><i data-lucide="skip-back"></i></button>
+    <button class="btn btn-primary" id="play">Play</button>
+    <button class="btn" id="next" aria-label="Next move" data-tooltip="Next move"><i data-lucide="skip-forward"></i></button>
+    <button class="btn" id="end" aria-label="Go to solved" data-tooltip="Go to solved"><i data-lucide="flag"></i></button>
+    <label class="form-label">Pacing <select class="form-select" id="speed"><option value="1000">Slow</option><option value="600" selected>Study</option><option value="250">Quick</option></select></label>
+    <label class="form-label">Alignment <select class="form-select" id="align"><option value="moves">Same move count</option><option value="progress">Same progress</option></select></label>
+  </div>
+  <label class="form-label" for="timeline">Sequence position <span id="position" class="tabular-nums"></span></label>
+  <input class="form-range" id="timeline" type="range" min="0" max="31" value="0" step="1">
+  <div id="case-note" class="text-small"></div>
+  <div class="cs-lanes">
+    <section class="cs-lane" data-lane="0"><h3 class="lane-title"></h3><div class="lane-badge text-small"></div><div class="cs-scene" role="img" aria-label="Left cube, drag to orbit"></div><div class="lane-state" aria-live="polite"></div><div class="cs-stages"></div><div class="cs-sequence"></div><div class="cs-graph" role="img" aria-label="Corner and edge permutations"></div><div class="cs-orientation text-small"></div></section>
+    <section class="cs-lane" data-lane="1"><h3 class="lane-title"></h3><div class="lane-badge text-small"></div><div class="cs-scene" role="img" aria-label="Right cube, drag to orbit"></div><div class="lane-state" aria-live="polite"></div><div class="cs-stages"></div><div class="cs-sequence"></div><div class="cs-graph" role="img" aria-label="Corner and edge permutations"></div><div class="cs-orientation text-small"></div></section>
+  </div>
+  <div class="viz-controls"><span>Permutation lens</span><button class="btn" id="state-lens" aria-pressed="true">Current state</button><button class="btn" id="turn-lens" aria-pressed="false">Last turn</button><button class="btn" id="clear-selection">All pieces</button><label class="form-label">Track piece <select class="form-select" id="piece-picker"><option value="">All pieces</option></select></label></div>
+  <div id="selection" aria-live="polite">Select a piece on either cube or permutation map.</div>
+  <div class="text-small cs-legend" id="graph-legend">Arrows: home → current slot · Selected corner: twist 0/1/2 · Selected edge: flip 0/1 · U/D/R/L/F/B: face directions</div>
+  <details><summary>Move sequence &amp; verification</summary><div id="evidence"></div></details>
+  <div id="error" class="text-destructive" role="alert" hidden></div>
+</div>
+<style>
+#cube-study {color:var(--foreground);width:100%;}
+#cube-study .cs-heading {display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:16px 0; padding-right:8px;}
+#cube-study .cs-lanes {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:24px;row-gap:6px;margin-top:16px;}
+#cube-study .cs-lane {min-width:0;display:grid;grid-template-rows:subgrid;grid-row:span 8;}
+#cube-study h2 {padding-right:90px;}
+#cube-study h3 {margin:8px 0;}
+#cube-study .cs-scene {width:100%;height:270px;touch-action:none;}
+#cube-study canvas {display:block;width:100%;height:100%;}
+#cube-study .lane-state {min-height:24px;margin:4px 0;}
+#cube-study .cs-stages {display:flex;gap:5px;flex-wrap:wrap;margin:8px 0;}
+#cube-study .cs-sequence {display:flex;flex-wrap:wrap;gap:3px;min-height:90px;align-content:start;}
+#cube-study .cs-graph {width:100%;height:250px;}
+#cube-study .cs-graph svg {overflow:visible;}
+#cube-study .cs-graph text {fill:var(--foreground);font-size:12px;}
+#cube-study .cs-orientation {min-height:36px;}
+#cube-study details {margin-top:16px;}
+#cube-study code {white-space:normal;overflow-wrap:anywhere;}
+#cube-study .cs-legend {margin:8px 0;}
+#cube-study .cs-net {display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+#cube-study .cs-face {display:grid;grid-template-columns:repeat(3,1fr);gap:2px;}
+#cube-study .cs-sticker {aspect-ratio:1;text-align:center;color:#111;}
+@media(max-width:650px){#cube-study .cs-lanes {grid-template-columns:minmax(0,1fr);gap:20px;} #cube-study .cs-lane {display:block;} #cube-study .cs-scene {height:250px;} #cube-study .cs-sequence {min-height:0;}}
+</style>
+<script type="module">
+const DATA=__CUBE_DATA__;
+const root=document.getElementById('cube-study');
+const $=s=>root.querySelector(s);
+const faces='URFDLB', cornerNames=['URF','UFL','ULB','UBR','DFR','DLF','DBL','DRB'], edgeNames=['UR','UF','UL','UB','DR','DF','DL','DB','FR','FL','BL','BR'];
+// Physical sticker colors, not chart categories; labels keep identity independent of hue.
+const faceColors=['#f4f4f0','#e63e42','#17a977','#f8d343','#ff942e','#3089e6'];
+let caseIndex=0,step=0,playing=false,selected=null,lens='state',align='moves',duration=600,anim=null,lastTick=0;
+let THREE,OrbitControls,views=[],webgl=false;
+const laneElements=[...root.querySelectorAll('.cs-lane')];
+const pieces=[...DATA.CF.map((ids,i)=>({kind:'cp',id:i,ids,name:cornerNames[i]})),...DATA.EF.map((ids,i)=>({kind:'ep',id:i,ids,name:edgeNames[i]}))];
+const pieceForSticker=id=>pieces.find(p=>p.ids.includes(id));
+const active=()=>DATA.cases[caseIndex];
+const lanes=()=>[active().left,active().right];
+const maximum=()=>Math.max(...lanes().map(l=>l.moves.length));
+const indexFor=(i,s=step)=>align==='progress'?Math.round(s/maximum()*lanes()[i].moves.length):Math.min(s,lanes()[i].moves.length);
+const theme=n=>getComputedStyle(root).getPropertyValue(n).trim();
+let lastSaved='';
+const save=()=>{const privateContent={caseIndex,step,lens,selected,align,duration};lastSaved=JSON.stringify(privateContent);window.openai?.setWidgetState?.({modelContent:{case:active().id,step,lens,selected: selected?.name??null},privateContent})?.catch(()=>{});};
+function restore(v){if(!v)return;caseIndex=Number.isInteger(v.caseIndex)&&v.caseIndex>=0&&v.caseIndex<DATA.cases.length?v.caseIndex:0;step=Math.max(0,Math.min(Number(v.step)||0,maximum()));lens=v.lens==='turn'?'turn':'state';align=v.align==='progress'?'progress':'moves';duration=[250,600,1000].includes(v.duration)?v.duration:600;selected=pieces.find(p=>p.name===v.selected?.name)||null;}
+restore(window.openai?.widgetState?.privateContent);
+window.addEventListener('openai:set_globals',e=>{const v=e.detail?.globals?.widgetState?.privateContent;if(!v||JSON.stringify(v)===lastSaved)return;stop();restore(v);rebuild();});
+function button(text,fn){const b=document.createElement('button');b.type='button';b.className='btn';b.textContent=text;b.onclick=fn;return b;}
+function stop(){playing=false;anim=null;$('#play').textContent='Play';}
+function jump(s){stop();step=Math.max(0,Math.min(s,maximum()));update();save();}
+function selectPiece(p){selected=p;update();save();}
+DATA.cases.forEach((c,i)=>$('#case-controls').append(button(c.label,()=>{stop();caseIndex=i;step=0;selected=null;rebuild();save();})));
+$('#begin').onclick=()=>jump(0);$('#back').onclick=()=>jump(step-1);$('#next').onclick=()=>{stop();update();advance(false);};$('#end').onclick=()=>jump(maximum());
+$('#timeline').oninput=e=>jump(+e.target.value);
+$('#play').onclick=()=>{if(playing){stop();update();}else{if(step>=maximum())step=0;playing=true;$('#play').textContent='Pause';advance(true);}save();};
+$('#speed').onchange=e=>{duration=+e.target.value;save();};
+$('#align').onchange=e=>{stop();align=e.target.value;update();save();};
+$('#state-lens').onclick=()=>{lens='state';update();save();};$('#turn-lens').onclick=()=>{lens='turn';update();save();};
+$('#clear-selection').onclick=()=>selectPiece(null);
+for(const p of pieces){const o=document.createElement('option');o.value=p.name;o.textContent=p.name;$('#piece-picker').append(o);}
+$('#piece-picker').onchange=e=>selectPiece(pieces.find(p=>p.name===e.target.value)||null);
+function advance(continuous){if(anim)return;if(step>=maximum()){stop();return;}if(matchMedia('(prefers-reduced-motion: reduce)').matches){step++;update();if(continuous)lastTick=performance.now();return;}anim={from:step,to:step+1,start:performance.now(),continuous};}
+function loc(i){const f=Math.floor(i/9),r=Math.floor(i%9/3),c=i%3;return [
+ {p:[c-1,1,r-1],n:[0,1,0]}, {p:[1,1-r,1-c],n:[1,0,0]}, {p:[c-1,1-r,1],n:[0,0,1]},
+ {p:[c-1,-1,1-r],n:[0,-1,0]}, {p:[-1,1-r,c-1],n:[-1,0,0]}, {p:[1-c,1-r,-1],n:[0,0,-1]}
+ ][f];}
+function initView(el,i){
+ const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));el.append(renderer.domElement);
+ const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(35,1,.1,100);camera.position.set(6,5,7);camera.lookAt(0,0,0);
+ const controls=new OrbitControls(camera,renderer.domElement);controls.enableZoom=true;controls.enablePan=false;controls.minDistance=5;controls.maxDistance=14;controls.target.set(0,0,0);
+ const cubies=[],stickers=[];const plastic=new THREE.MeshBasicMaterial({color:theme('--muted-foreground')||'#555555'});
+ const box=new THREE.BoxGeometry(.97,.97,.97),plane=new THREE.PlaneGeometry(.84,.84);
+ for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){if(!x&&!y&&!z)continue;const g=new THREE.Group();g.userData.base=new THREE.Vector3(x,y,z);g.position.copy(g.userData.base);g.add(new THREE.Mesh(box,plastic));scene.add(g);cubies.push(g);}
+ for(let s=0;s<54;s++){const {p,n}=loc(s),g=cubies.find(g=>g.userData.base.toArray().every((v,j)=>v===p[j]));const tile=new THREE.Mesh(plane,new THREE.MeshBasicMaterial());tile.position.set(...n).multiplyScalar(.493);tile.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(...n));tile.userData.slot=s;g.add(tile);stickers.push(tile);}
+ const resize=()=>{const w=el.clientWidth,h=el.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();};new ResizeObserver(resize).observe(el);resize();
+ const raycaster=new THREE.Raycaster();let down;
+ renderer.domElement.addEventListener('pointerdown',e=>down=[e.clientX,e.clientY]);
+ renderer.domElement.addEventListener('pointerup',e=>{if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>6)return;const r=el.getBoundingClientRect();raycaster.setFromCamera(new THREE.Vector2(2*(e.clientX-r.left)/r.width-1,1-2*(e.clientY-r.top)/r.height),camera);scene.updateMatrixWorld(true);const hit=raycaster.intersectObjects(stickers)[0];if(hit){const st=lanes()[i].states[indexFor(i)];selectPiece(pieceForSticker(st.stickers[hit.object.userData.slot])||null);}});
+ renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();$('#error').hidden=false;$('#error').textContent='3D context lost. Permutation maps and move controls remain available.';});
+ return {renderer,scene,camera,controls,cubies,stickers};
+}
+function drawCube(i,state,move=null,t=0){
+ const v=views[i];if(!v)return;
+ const colors=active().colors;
+ v.stickers.forEach((mesh,s)=>{const id=state.stickers[s],p=pieceForSticker(id);mesh.material.color.set(faceColors[colors[Math.floor(id/9)]]);if(selected&&p?.name!==selected.name)mesh.material.color.multiplyScalar(.28);});
+ const spec={R:[0,1,-1],L:[0,-1,1],U:[1,1,-1],D:[1,-1,1],F:[2,1,-1],B:[2,-1,1]};
+ const [axis,side,sign]=move?spec[move[0]]:[0,0,0];const amount=move?.includes('2')?2:move?.includes("'")?-1:1;const av=new THREE.Vector3(...[0,1,2].map(n=>n===axis?1:0));
+ v.cubies.forEach(g=>{g.position.copy(g.userData.base);g.quaternion.identity();if(move&&g.userData.base.getComponent(axis)===side){g.quaternion.setFromAxisAngle(av,sign*amount*Math.PI/2*t);g.position.applyQuaternion(g.quaternion);}});
+ v.renderer.render(v.scene,v.camera);
+}
+function fallback(el,state){el.replaceChildren();const net=document.createElement('div');net.className='cs-net';for(let f=0;f<6;f++){const face=document.createElement('div');face.className='cs-face';for(let j=0;j<9;j++){const t=document.createElement('span'),id=state.stickers[9*f+j];t.className='cs-sticker';t.style.background=faceColors[active().colors[Math.floor(id/9)]];t.textContent=faces[f]+(j+1);face.append(t);}net.append(face);}el.append(net);}
+const NS='http://www.w3.org/2000/svg';
+function svgEl(tag,attrs,text){const el=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))el.setAttribute(k,v);if(text!==undefined)el.textContent=text;return el;}
+function drawGraph(i){
+ const el=laneElements[i].querySelector('.cs-graph'),w=el.clientWidth,h=250,svg=svgEl('svg',{width:w,height:h,viewBox:`0 0 ${w} ${h}`});el.replaceChildren(svg);
+ const defs=svgEl('defs',{}),marker=svgEl('marker',{id:`cs-arrow-${i}`,viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:5,markerHeight:5,orient:'auto-start-reverse'});marker.append(svgEl('path',{d:'M 0 0 L 10 5 L 0 10 z',fill:'var(--viz-series-1)'}));defs.append(marker);svg.append(defs);
+ const idx=indexFor(i),state=lanes()[i].states[idx],prev=lanes()[i].states[Math.max(0,idx-1)];
+ ['cp','ep'].forEach((kind,k)=>{const names=k?edgeNames:cornerNames,n=names.length,cx=w*(k?.75:.25),cy=120,rad=Math.min(w/4-39,70),orientation=k?'eo':'co';
+ const positions=names.map((_,j)=>({x:cx+rad*Math.cos(-Math.PI/2+2*Math.PI*j/n),y:cy+rad*Math.sin(-Math.PI/2+2*Math.PI*j/n)}));
+ svg.append(svgEl('text',{x:cx,y:15,'text-anchor':'middle'},k?'Edges':'Corners'));
+ const perm=Array.from({length:n},(_,id)=>state[kind].indexOf(id));
+ for(let id=0;id<n;id++){const from=lens==='turn'?prev[kind].indexOf(id):id,to=perm[id],p=positions[from],q=positions[to];if(from===to)continue;const isSelected=selected?.kind===kind&&selected.id===id;const dx=q.x-p.x,dy=q.y-p.y,len=Math.hypot(dx,dy),a={x:p.x+dx/len*10,y:p.y+dy/len*10},b={x:q.x-dx/len*12,y:q.y-dy/len*12};svg.append(svgEl('path',{d:`M${a.x},${a.y} Q${cx+(a.y-b.y)*.1},${cy+(b.x-a.x)*.1} ${b.x},${b.y}`,fill:'none',stroke:'var(--viz-series-1)','stroke-width':isSelected?3:1.4,opacity:selected?(isSelected?1:.12):.65,'marker-end':`url(#cs-arrow-${i})`}));}
+ positions.forEach((p,j)=>{const id=state[kind][j],isSelected=selected?.kind===kind&&selected.id===id;const g=svgEl('g',{'data-piece':names[id],class:'cursor-interaction'});g.append(svgEl('circle',{cx:p.x,cy:p.y,r:isSelected?10:7,fill:isSelected?'var(--viz-series-1)':'var(--muted)',stroke:'var(--border)'}));const outward=(p.x-cx)/rad;const labelx=p.x+(Math.abs(outward)>.45?(outward>0?12:-12):0),labely=p.y+(Math.abs(outward)>.45?4:(p.y<cy?-12:22));g.append(svgEl('text',{x:labelx,y:labely,'text-anchor':Math.abs(outward)>.45?(outward>0?'start':'end'):'middle'},names[j]));g.setAttribute('data-tooltip',`${names[id]} at ${names[j]}; ${k?'flip':'twist'} ${state[orientation][j]}`);g.onclick=()=>selectPiece(pieces.find(p=>p.kind===kind&&p.id===id));svg.append(g);});
+ const bad=state[orientation].filter(v=>v!==0).length;svg.append(svgEl('text',{x:cx,y:240,'text-anchor':'middle'},`${bad} ${k?'flipped':'twisted'}`));
+ });
+}
+function stageAt(l,index){return l.stageEnds.find(s=>index<s.end)?.name||'Solved';}
+function selectionText(){if(!selected)return 'Select a piece on either cube or permutation map.';return selected.name+' · '+lanes().map((l,i)=>{const s=l.states[indexFor(i)],pos=s[selected.kind].indexOf(selected.id),names=selected.kind==='cp'?cornerNames:edgeNames,orientation=s[selected.kind==='cp'?'co':'eo'][pos];return `${i?'Right':'Left'}: ${names[pos]}, ${selected.kind==='cp'?'twist':'flip'} ${orientation}`;}).join(' | ');}
+function update(){
+ $('#position').textContent=`${step} / ${maximum()}`;$('#timeline').max=maximum();$('#timeline').value=step;$('#state-lens').setAttribute('aria-pressed',lens==='state');$('#turn-lens').setAttribute('aria-pressed',lens==='turn');$('#selection').textContent=selectionText();$('#piece-picker').value=selected?.name||'';
+ $('#graph-legend').textContent=`Arrows: ${lens==='state'?'home → current slot':'previous → current slot'} · Selected corner: twist 0/1/2 · Selected edge: flip 0/1 · U/D/R/L/F/B: face directions`;
+ lanes().forEach((l,i)=>{const n=indexFor(i),st=l.states[n],el=laneElements[i],solved=st.cp.every((v,j)=>v===j)&&st.ep.every((v,j)=>v===j)&&st.co.every(v=>!v)&&st.eo.every(v=>!v);el.querySelector('.lane-state').textContent=`${n} / ${l.moves.length} turns · ${solved?'Solved':(n?'after '+l.moves[n-1]:'Scrambled')+' · Next: '+stageAt(l,n)}`;
+ el.querySelectorAll('.cs-sequence button').forEach((b,j)=>b.setAttribute('aria-pressed',j===n-1));
+ const cross=[4,5,6,7].filter(j=>st.ep[j]===j&&!st.eo[j]).length,pairs=[4,5,6,7].filter(j=>st.cp[j]===j&&!st.co[j]&&st.ep[j+4]===j+4&&!st.eo[j+4]).length;
+ el.querySelector('.cs-orientation').textContent=active().id==='record'?`Cross: ${cross}/4 edges · F2L: ${pairs}/4 corner–edge pairs`:`Correct corners: ${st.cp.filter((p,j)=>p===j&&!st.co[j]).length}/8 · correct edges: ${st.ep.filter((p,j)=>p===j&&!st.eo[j]).length}/12`;
+ if(webgl)drawCube(i,st);else fallback(el.querySelector('.cs-scene'),st);drawGraph(i);
+ });
+}
+function rebuild(){
+ const c=active();$('#case-title').textContent=c.title;$('#case-note').textContent=c.note;$('#source-link').href=c.source;$('#align').value=align;$('#speed').value=duration;
+ [...$('#case-controls').children].forEach((b,i)=>b.setAttribute('aria-pressed',i===caseIndex));
+ lanes().forEach((l,i)=>{const el=laneElements[i];el.querySelector('.lane-title').textContent=l.label;el.querySelector('.lane-badge').textContent=l.badge;const steps=el.querySelector('.cs-sequence');steps.replaceChildren();l.moves.forEach((m,j)=>{const b=button(m,()=>jump(align==='progress'?Math.round((j+1)/l.moves.length*maximum()):j+1));b.setAttribute('aria-label',`${l.label}: step ${j+1}, ${m}`);steps.append(b);});const stages=el.querySelector('.cs-stages');stages.replaceChildren();l.stageEnds.forEach(s=>{const b=button(s.name,()=>jump(align==='progress'?Math.round(s.end/l.moves.length*maximum()):s.end));stages.append(b);});});
+ const ev=$('#evidence');ev.replaceChildren();
+ const rows=[['Scramble',c.scramble],['Inspection frame',c.inspection||'Standard U/F orientation'],['Left route',c.left.alg],['Right route',c.right.alg],['Move metrics',`Left: ${c.left.moves.length} executed HTM / ${c.left.qtm} QTM. Right: ${c.right.moves.length} executed HTM / ${c.right.qtm} QTM. Rotations excluded.`],['Adjacent-turn simplification',`Right route: ${c.right.simplified.split(' ').length} HTM after combining adjacent same-face turns. Playback retains the recorded actions.`],['Verification','Both routes reach identity. Every sticker identity is included exactly once. Corners include twist and edges include flip.']];
+ if(c.layers)rows.push(['Exact-search certificate','Depths 0, 1, 2, 3: '+c.layers.join(', ')+' distinct states; target absent. A length-4 solution exists.']);
+ for(const [a,b]of rows){const p=document.createElement('p'),strong=document.createElement('strong');strong.textContent=a+': ';p.append(strong,document.createTextNode(b));ev.append(p);}update();
+}
+function frame(now){
+ if(anim){const t=Math.min(1,(now-anim.start)/duration),smooth=t*t*(3-2*t);lanes().forEach((l,i)=>{const a=indexFor(i,anim.from),b=indexFor(i,anim.to);if(webgl){if(b===a+1)drawCube(i,l.states[a],l.moves[a],smooth);else drawCube(i,l.states[t<.5?a:b]);}});if(t===1){step=anim.to;const continuous=anim.continuous;anim=null;update();save();lastTick=now;if(continuous&&playing&&step<maximum())advance(true);else if(step>=maximum())stop();}}
+ else {if(webgl)views.forEach(v=>{v.controls.update();v.renderer.render(v.scene,v.camera);});if(playing&&now-lastTick>=duration)advance(true);}
+ requestAnimationFrame(frame);
+}
+rebuild();
+try{
+ THREE=await import('https://esm.sh/three@0.160.1');
+ ({OrbitControls}=await import('https://esm.sh/three@0.160.1/examples/jsm/controls/OrbitControls.js'));
+ laneElements.forEach(el=>el.querySelector('.cs-scene').replaceChildren());views=laneElements.map((el,i)=>initView(el.querySelector('.cs-scene'),i));webgl=true;update();
+}catch(e){webgl=false;update();$('#error').hidden=false;$('#error').textContent='3D unavailable; verified sticker nets and permutation maps remain interactive.';}
+new ResizeObserver(()=>lanes().forEach((_,i)=>drawGraph(i))).observe(root);
+window.__cubeStudy={data:DATA,getState:()=>({caseIndex,step,playing,anim,selected: selected?.name,lens,indices:lanes().map((_,i)=>indexFor(i)),webgl}),jump,selectCase:i=>{stop();caseIndex=i;step=0;selected=null;rebuild();}};
+requestAnimationFrame(frame);
+</script>

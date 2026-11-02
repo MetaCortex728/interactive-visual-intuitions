@@ -1,0 +1,10 @@
+const fs=require('fs'),path=require('path');
+const Cube=require('../cube-permutation-study/vendor/cube.cjs');
+const corners=['URF','UFL','ULB','UBR','DFR','DLF','DBL','DRB'];
+const edges=['UR','UF','UL','UB','DR','DF','DL','DB','FR','FL','BL','BR'];
+const presets=['R','U',"R U R' U'"].map(alg=>{const c=new Cube().move(alg);return {alg,corners:{names:corners,p:corners.map((_,i)=>c.cp.indexOf(i)),orientation:c.co},edges:{names:edges,p:edges.map((_,i)=>c.ep.indexOf(i)),orientation:c.eo}};});
+const model=fs.readFileSync(path.join(__dirname,'model.cjs'),'utf8');
+const template=fs.readFileSync(path.join(__dirname,'visual.template.html'),'utf8');
+const html=template.replace('/* MODEL */',model).replace('/* PRESETS */','const cubePresets='+JSON.stringify(presets)+';');
+const target=require('path').join(__dirname,'../../output/possibility-atlas.html');
+fs.writeFileSync(target,html);console.log(target,Buffer.byteLength(html));

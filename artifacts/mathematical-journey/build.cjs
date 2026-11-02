@@ -1,0 +1,12 @@
+const fs=require('node:fs'),path=require('node:path');
+const chapters=require('./chapters.cjs'),equations=require('./equations.cjs');
+const target=require('path').join(__dirname,'../../output/mathematics-of-change.html');
+const studio=fs.readFileSync(path.join(__dirname,'sequence.template.html'),'utf8').replace('/* SEQUENCE MODEL */',fs.readFileSync(path.join(__dirname,'sequence-model.cjs'),'utf8')).replace('/* SEQUENCE DATA */',JSON.stringify(require('./sequence-data.cjs')));
+const split=studio.indexOf('<script>');
+const fragment=fs.readFileSync(path.join(__dirname,'visual.template.html'),'utf8').replace('/* MODEL */',fs.readFileSync(path.join(__dirname,'model.cjs'),'utf8')).replace('/* CHAPTERS */','const chapters='+JSON.stringify(chapters.map(({title,field})=>({title,field})))+';').replace('<!-- SEQUENCE MARKUP -->',studio.slice(0,split)).replace('<!-- SEQUENCE SCRIPT -->',studio.slice(split)+'\n<script>window.MathJourneyBindStudio();</script>');
+fs.writeFileSync(target,fragment);
+const preface=fs.readFileSync(path.join(__dirname,'preface.md'),'utf8');
+const afterword=fs.readFileSync(path.join(__dirname,'afterword.md'),'utf8');
+const guide=preface+'\n\n'+chapters.map((c,i)=>`## ${String(i+1).padStart(2,'0')}. ${c.title}\n\n*${c.field}*\n\n**Explore:** ${c.question}\n\n**Notice:** ${c.notice}\n\n**Essence:** ${c.essence}\n\n$$\n${equations[i].tex}\n$$\n\n### Derive\n\n${c.derive.map((p,j)=>`${j+1}. ${p}`).join('\n\n')}\n\n**Connect:** ${c.connect}\n\n**Complexity:** ${c.complexity}\n\n**Contemplate:** ${c.reflect}\n\nContinue connections: ${c.links.map(j=>`${String(j+1).padStart(2,'0')}. ${chapters[j].title}`).join('; ')}.`).join('\n\n')+'\n\n'+afterword;
+fs.writeFileSync(path.join(__dirname,'GUIDE.md'),guide);
+console.log(JSON.stringify({fragment:target,bytes:Buffer.byteLength(fragment),guideWords:guide.split(/\s+/).length}));

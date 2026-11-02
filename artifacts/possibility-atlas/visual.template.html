@@ -1,0 +1,214 @@
+<div id="possibility-atlas">
+  <style>
+    #possibility-atlas {color:var(--foreground);font-family:inherit}
+    #possibility-atlas .pa-nav,#possibility-atlas .pa-tools {display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+    #possibility-atlas .pa-panels {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:24px}
+    #possibility-atlas .pa-drawing {width:100%;min-width:0}
+    #possibility-atlas .pa-drawing svg {display:block;width:100%;overflow:visible}
+    #possibility-atlas svg text {fill:var(--foreground);font-size:12px;font-family:inherit}
+    #possibility-atlas .pa-equation {font-family:ui-monospace,monospace;overflow-wrap:anywhere;margin:10px 0}
+    #possibility-atlas .pa-caption {margin:8px 0;overflow-wrap:anywhere}
+    #possibility-atlas .pa-selection {display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+    #possibility-atlas .pa-proof {display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;margin:12px 0}
+    #possibility-atlas .pa-dot {width:12px;height:12px;display:inline-block;border-radius:50%;margin-right:6px;background:var(--viz-series-1)}
+    #possibility-atlas .pa-metrics {display:flex;gap:20px;flex-wrap:wrap;margin:12px 0}
+    #possibility-atlas .pa-metrics span {overflow-wrap:anywhere}
+    #possibility-atlas .pa-range {min-width:0;flex:1 1 180px}
+    #possibility-atlas [hidden] {display:none!important}
+    #possibility-atlas summary {margin:12px 0}
+    #possibility-atlas .pa-view {min-width:0}
+    #possibility-atlas svg .pa-line {fill:none;stroke:var(--border);stroke-width:1.5}
+    #possibility-atlas svg .pa-active {fill:none;stroke:var(--viz-series-1);stroke-width:4}
+    #possibility-atlas .pa-foot {margin:18px 0 0}
+    #possibility-atlas .pa-layer {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0 18px}
+    #possibility-atlas .pa-layer .pa-token {display:flex;align-items:center;justify-content:center;gap:5px}
+    #possibility-atlas .pa-token svg {width:22px;height:22px;flex-shrink:0}
+    @media(prefers-reduced-motion:no-preference){#possibility-atlas svg .pa-bead {transition:cx .25s,cy .25s}}
+  </style>
+  <h2>The shape of possibility</h2>
+  <div class="pa-nav" id="pa-nav" aria-label="Mathematical structures"></div>
+  <div class="pa-tools" id="pa-controls"></div>
+  <div class="pa-selection" id="pa-actions"></div>
+  <div class="pa-metrics" id="pa-metrics" aria-live="polite"></div>
+  <div class="pa-panels">
+    <section class="pa-view"><h3 id="pa-title-a"></h3><div id="pa-a" class="pa-drawing"></div></section>
+    <section class="pa-view"><h3 id="pa-title-b"></h3><div id="pa-b" class="pa-drawing"></div></section>
+  </div>
+  <div id="pa-caption" class="pa-caption" aria-live="polite"></div>
+  <hr>
+  <div class="pa-metrics"><span id="pa-count"></span><span id="pa-time"></span><span id="pa-space"></span></div>
+  <div class="pa-proof">
+    <button type="button" class="btn" id="pa-proof-back" aria-label="Previous derivation step">←</button>
+    <div><div id="pa-proof-label" class="text-small"></div><div id="pa-formula" class="pa-equation"></div><div id="pa-reason"></div></div>
+    <button type="button" class="btn" id="pa-proof-next" aria-label="Next derivation step">→</button>
+  </div>
+  <details><summary>Cost model and scope</summary><p>Counts describe objects; Big O describes an algorithm. Enumeration costs here include writing each complete output. Auxiliary memory excludes stored outputs. Arithmetic-operation bounds assume unit-cost integers; very large exact counts have additional bit costs. Search diagrams are idealized tree budgets, not measured cube-solver performance. Fixed 3x3 state counts are constants; n, k, b and d define the scalable families.</p></details>
+  <div class="pa-foot text-small"><a href="https://cube20.org/" target="_blank" rel="noreferrer">Cube20</a> · <a href="https://arxiv.org/html/1803.06816" target="_blank" rel="noreferrer">Colored token swapping</a> · <a href="https://arxiv.org/html/1106.5736" target="_blank" rel="noreferrer">Generalized cubes</a> · All diagrams calculated locally</div>
+</div>
+<script>
+/* MODEL */
+/* PRESETS */
+(()=>{
+  const root=document.getElementById('possibility-atlas'),$=id=>root.querySelector('#pa-'+id),M=window.Possibility;
+  const tabs=['Permutations','Combinations','Repeated colors','Stars & bars','Words vs states','Legal cube states','Search frontiers','1D → 2D → 3D'];
+  const defaults={tab:7,n:5,k:3,rank:47,progress:65,source:'generic',preset:2,lens:'cycles',subset:[0,2,4],multi:[2,2,1],multiRank:0,stars:[2,1,1],word:[0,1,0],depth:3,twist:0,flip:0,cp:0,ep:0,b:3,d:6,proof:0,dim:1,lineNine:false,history:[0,1,0],selected:-1,exampleSeed:37,compareNine:false};
+  let state=structuredClone(defaults),steps=[],lastKey='';
+  const color=i=>'var(--viz-series-'+(i%6+1)+')',fmt=v=>v.toLocaleString('en-US');
+  const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const text=(x,y,t,extra='')=>`<text x="${x}" y="${y}" ${extra}>${esc(t)}</text>`;
+  const line=(x,y,X,Y,extra='')=>`<line x1="${x}" y1="${y}" x2="${X}" y2="${Y}" class="pa-line" ${extra}/>`;
+  function svg(id,h,content,label){const w=Math.max(260,$(id).clientWidth);$(id).innerHTML=`<svg viewBox="0 0 ${w} ${h}" height="${h}" role="img" aria-label="${esc(label)}">${content(w)}</svg>`;}
+  function button(label,fn,pressed=false){const b=document.createElement('button');b.type='button';b.className='btn';b.textContent=label;b.setAttribute('aria-pressed',String(pressed));b.onclick=fn;return b;}
+  function action(label,fn,pressed=false){$('actions').append(button(label,()=>{fn();render();save();},pressed));}
+  function range(label,min,max,val,fn){const l=document.createElement('label');l.className='form-label pa-range';l.append(document.createTextNode(label+': '+val));const i=document.createElement('input');i.type='range';i.className='form-range';i.min=min;i.max=max;i.value=val;i.setAttribute('aria-label',label);i.oninput=()=>{fn(Number(i.value));render(false);save();l.firstChild.textContent=label+': '+i.value;};i.onchange=()=>render();l.append(i);$('controls').append(l);}
+  function metric(...v){$('metrics').replaceChildren(...v.map(t=>{const e=document.createElement('span');e.textContent=t;return e;}));}
+  function titles(a,b){$('title-a').textContent=a;$('title-b').textContent=b;}
+  function costs(count,time,space){$('count').textContent='Count: '+count;$('time').textContent='Time: '+time;$('space').textContent='Auxiliary space: '+space;}
+  function proof(data){steps=data;state.proof=Math.min(state.proof,steps.length-1);const v=steps[state.proof];$('proof-label').textContent='Derivation '+(state.proof+1)+' / '+steps.length;$('formula').textContent=v[0];$('reason').textContent=v[1];$('proof-back').disabled=state.proof===0;$('proof-next').disabled=state.proof===steps.length-1;}
+  function circles(p,names){svg('b',310,w=>{const cx=w/2,cy=150,r=Math.min(w/2-42,110),pts=p.map((_,i)=>[cx+r*Math.cos(i*2*Math.PI/p.length-Math.PI/2),cy+r*Math.sin(i*2*Math.PI/p.length-Math.PI/2)]);let s='';p.forEach((j,i)=>{if(i===j)return;const a=pts[i],b=pts[j],dist=Math.hypot(b[0]-a[0],b[1]-a[1]),qx=(a[0]+b[0])/2-22*(b[1]-a[1])/dist,qy=(a[1]+b[1])/2+22*(b[0]-a[0])/dist;s+=`<path d="M${a[0]},${a[1]} Q${qx},${qy} ${b[0]},${b[1]}" fill="none" stroke="${color(i)}" stroke-width="2" opacity=".65"/>`;const t=.7,x=(1-t)**2*a[0]+2*(1-t)*t*qx+t*t*b[0],y=(1-t)**2*a[1]+2*(1-t)*t*qy+t*t*b[1],angle=Math.atan2((1-t)*(qy-a[1])+t*(b[1]-qy),(1-t)*(qx-a[0])+t*(b[0]-qx))*180/Math.PI;s+=`<path d="M-6,-4 L4,0 L-6,4 Z" fill="${color(i)}" transform="translate(${x} ${y}) rotate(${angle})"/>`;});pts.forEach(([x,y],i)=>{s+=`<circle cx="${x}" cy="${y}" r="16" fill="${color(i)}" fill-opacity=".18"/>`+text(x,y+4,names[i],'text-anchor="middle"');});return s+text(cx,300,'Arrows follow source → destination','text-anchor="middle"');},'Directed permutation cycles, including fixed points.');}
+  function permutation(controls){
+    state.n=Math.min(6,state.n);state.rank=Math.min(state.rank,Number(M.fact(state.n))-1);
+    if(controls){range('Items n',3,6,state.n,v=>{state.n=v;state.rank=Math.min(state.rank,Number(M.fact(v))-1);state.source='generic';});range('Permutation rank',0,Number(M.fact(state.n))-1,state.rank,v=>{state.rank=v;state.source='generic';});range('Travel %',0,100,state.progress,v=>state.progress=v);}
+    action('Abstract items',()=>state.source='generic',state.source==='generic');action('Cube corners',()=>state.source='corners',state.source==='corners');action('Cube edges',()=>state.source='edges',state.source==='edges');
+    if(state.source!=='generic')cubePresets.forEach((p,i)=>action(p.alg,()=>state.preset=i,state.preset===i));
+    action('Cycle rings',()=>state.lens='cycles',state.lens==='cycles');action('Permutation matrix',()=>state.lens='matrix',state.lens==='matrix');
+    const item=state.source==='generic'?null:cubePresets[state.preset][state.source],p=item?item.p:M.unrank(state.n,state.rank),names=item?item.names:p.map((_,i)=>String.fromCharCode(65+i)),n=p.length,t=state.progress/100;
+    titles('Colored trajectories',state.lens==='cycles'?'Cycle decomposition':'Destination matrix');
+    metric(n+' distinct pieces',fmt(M.fact(n))+' unconstrained permutations','Parity: '+(M.parity(p)?'odd':'even'));
+    svg('a',n*33+54,w=>{const x=38,X=w-42;let s=text(x,16,'From','text-anchor="middle"')+text(X,16,'To','text-anchor="middle"');p.forEach((j,i)=>{const y=40+i*33,Y=40+j*33,cx=(x+X)/2;s+=`<path d="M${x},${y} C${cx},${y} ${cx},${Y} ${X},${Y}" fill="none" stroke="${color(i)}" stroke-width="3" opacity=".55"/>`;const bx=(1-t)**3*x+3*(1-t)**2*t*cx+3*(1-t)*t*t*cx+t**3*X,by=(1-t)**3*y+3*(1-t)**2*t*y+3*(1-t)*t*t*Y+t**3*Y;s+=`<circle class="pa-bead" cx="${bx}" cy="${by}" r="7" fill="${color(i)}"/>`+text(x-13,y+4,names[i],'text-anchor="end"')+text(X+13,y+4,names[i],'text-anchor="start"');});return s;},'One colored trajectory per piece. From and To labels denote positions.');
+    if(state.lens==='cycles')circles(p,names);else svg('b',330,w=>{const sz=Math.min((w-60)/n,25),x=(w-n*sz)/2,y=35;let s='';for(let i=0;i<n;i++){s+=text(x-8,y+i*sz+sz*.7,names[i],'text-anchor="end"')+text(x+(i+.5)*sz,y-8,names[i],'text-anchor="middle"');for(let j=0;j<n;j++)s+=`<rect x="${x+j*sz+1}" y="${y+i*sz+1}" width="${sz-2}" height="${sz-2}" fill="${p[i]===j?color(i):'var(--muted)'}" fill-opacity="${p[i]===j?1:.5}"/>`;}return s+text(w/2,y+n*sz+25,'Rows: source / columns: destination','text-anchor="middle"');},'Permutation matrix: exactly one occupied cell in each row and column.');
+    $('caption').textContent=(item?'Actual '+cubePresets[state.preset].alg+' position permutation from cubejs; cubie orientation is omitted. Colors identify pieces, not face colors. ':'Rank is lexicographic; motion percentage does not change the permutation. ')+'Cycles: '+M.cycles(p).map(c=>'('+c.map(i=>names[i]).join(' ')+')').join(' ');
+    costs('n!','O(n · n!) to emit all; O(n) to apply one','O(n)');
+    proof([['n × (n − 1) × … × 1 = n!','Each occupied destination removes one choice for the next distinct piece.'],['N outputs × n written entries = Θ(nN)','Enumerating explicit arrays costs Θ(n · n!), not merely O(n!). A swap-only stream has a different output contract.'],['π = disjoint cycles; Σ cycle lengths = n','Following each unvisited piece visits all pieces exactly once: Θ(n) time and O(n) visited storage.'],['order(π) = lcm(cycle lengths)','The position permutation returns to identity after this many repetitions. Cube twists and flips must also return; position cycles alone cannot certify a cube algorithm’s order.']]);
+  }
+  function combination(controls){
+    if(controls){range('Items n',3,8,state.n,v=>{state.n=v;state.k=Math.min(state.k,v);state.subset=M.subsets(v,state.k)[0];});range('Chosen k',0,state.n,state.k,v=>{state.k=v;state.subset=M.subsets(state.n,v)[0];});}
+    const n=state.n,k=Math.min(state.k,n),sets=M.subsets(n,k),selected=state.subset.filter(x=>x<n);if(selected.length!==k)state.subset=sets[0];
+    const rank=Math.max(0,sets.findIndex(a=>a.join()===state.subset.join()));action('Previous subset',()=>state.subset=sets[(rank-1+sets.length)%sets.length]);action('Next subset',()=>state.subset=sets[(rank+1)%sets.length]);
+    titles('Selection becomes a lattice path','Order disappears');metric('Subset '+(rank+1)+' / '+sets.length,'Ordered selections: '+fmt(M.falling(n,k)),'Orders per subset: '+fmt(M.fact(k)));
+    svg('a',310,w=>{const rows=k+1,dx=(w-50)/(n+1),dy=210/Math.max(k,1),x=i=>25+i*dx,y=j=>260-j*dy;let s='';for(let i=0;i<=n;i++)for(let j=0;j<=Math.min(i,k);j++){if(i<n){s+=line(x(i),y(j),x(i+1),y(j));if(j<k)s+=line(x(i),y(j),x(i+1),y(j+1));}s+=`<circle cx="${x(i)}" cy="${y(j)}" r="3" fill="var(--border)"/>`;if(i===n)s+=text(x(i)+8,y(j)+4,String(M.choose(i,j)));}let j=0;for(let i=0;i<n;i++){const J=j+(state.subset.includes(i)?1:0);s+=`<path class="pa-active" d="M${x(i)},${y(j)} L${x(i+1)},${y(J)}"/>`+text(x(i),288,String.fromCharCode(65+i),'text-anchor="middle"');j=J;}return s+text(20,18,'Rise = choose; level = skip');},'Subset encoded as a choose-or-skip path ending at n,k. Endpoint labels are Pascal counts.');
+    const orders=M.permutations(state.subset).slice(0,6);svg('b',310,w=>{let s=text(10,18,'One subset: {'+state.subset.map(i=>String.fromCharCode(65+i)).join(', ')+'}');orders.forEach((a,r)=>{a.forEach((i,c)=>{const x=18+c*Math.min(35,(w-35)/Math.max(k,1)),y=50+r*35;s+=`<rect x="${x}" y="${y}" width="27" height="25" rx="3" fill="${color(i)}" fill-opacity=".3"/>`+text(x+13,y+17,String.fromCharCode(65+i),'text-anchor="middle"');});});return s+text(10,290,'Showing '+orders.length+' of '+fmt(M.fact(k))+' equivalent orders');},'Different ordered selections collapse to the same unordered subset.');
+    $('caption').textContent='The endpoint counts paths, not the drawn vertices. Each subset corresponds to exactly one rise/skip path; k! orders collapse to it.';
+    costs('C(n,k) = n! / [k!(n−k)!]','O(max(1,k) · C(n,k)) to emit subsets','O(k)');
+    proof([['P(n,k) = n(n−1)…(n−k+1)','Temporarily keep the chosen items ordered. This creates an ordered k-tuple without replacement.'],['C(n,k) = P(n,k) / k!','Every k-element subset has exactly k! orders. Dividing removes only order, not which pieces were selected.'],['C(n,k) = C(n−1,k) + C(n−1,k−1)','Split paths by whether the last item is skipped or chosen. This is Pascal’s recurrence.'],['All k: Σ C(n,k) = 2ⁿ','Each item independently enters or stays out. Fixed k is O(nᵏ) in n; k near n/2 grows exponentially.']]);
+  }
+  function repeated(controls){
+    if(controls)state.multi.forEach((c,i)=>range('Count '+String.fromCharCode(65+i),0,3,c,v=>{state.multi[i]=v;state.multiRank=0;}));
+    const counts=state.multi,n=counts.reduce((a,b)=>a+b,0),all=M.multiset(counts),idx=state.multiRank%all.length,p=all[idx];
+    action('Previous arrangement',()=>state.multiRank=(idx-1+all.length)%all.length);action('Next arrangement',()=>state.multiRank=(idx+1)%all.length);
+    titles('Color words','Identity is forgotten');metric(n+' objects',fmt(M.fact(n))+' labeled arrangements',all.length+' distinct color words');
+    svg('a',260,w=>{const cols=Math.max(1,Math.floor((w-24)/34));let s='';p.forEach((v,i)=>{let x=12+(i%cols)*34,y=45+Math.floor(i/cols)*44;s+=`<rect x="${x}" y="${y}" width="28" height="32" rx="3" fill="${color(v)}" fill-opacity=".35"/>`+text(x+14,y+21,String.fromCharCode(65+v),'text-anchor="middle"');});return s+text(12,18,'Arrangement '+(idx+1)+' / '+all.length)+text(12,230,'Color identity retained; object identity removed');},'A multiset arrangement with repeated colored tokens.');
+    svg('b',260,w=>{let s='';counts.forEach((c,i)=>{const y=45+i*66;s+=text(10,y-14,String.fromCharCode(65+i)+' group: '+c+'! = '+fmt(M.fact(c))+' relabelings');for(let j=0;j<c;j++){s+=`<circle cx="${30+j*55}" cy="${y+8}" r="18" fill="${color(i)}" fill-opacity=".3"/>`+text(30+j*55,y+12,String.fromCharCode(65+i)+(j+1),'text-anchor="middle"');}});return s;},'Labels within each color group can be permuted without changing the color word.');
+    $('caption').textContent='Identical-looking colors reduce the word count. Rubik’s Cube cubies are not interchangeable colored stickers: their positions, orientations and legal moves constrain them.';
+    costs('N = n! / ∏ mᵢ!','O(max(1,n) · N) explicit-output target','O(n + q) for a direct generator');
+    proof([['Label all objects: n! arrangements','Temporarily distinguish A1 from A2 even though they have the same visible color.'],['Each color word has ∏ mᵢ! labeled preimages','Within color i, all mᵢ! relabelings look the same. Independent relabelings multiply.'],['N = n! / (m₁! m₂! … m_q!)','This quotient counts color words. Their lengths remain n, so writing them all costs at least Ω(nN) for n>0.'],['Use remaining counts, not n! then deduplicate','Generate each color word once. The small display uses bounded recursive enumeration; stated costs describe an efficient explicit-output generator, not a browser benchmark.']]);
+  }
+  function stars(controls){
+    if(controls)state.stars.forEach((v,i)=>range('Box '+String.fromCharCode(65+i),0,5,v,x=>state.stars[i]=x));
+    const q=state.stars.length,k=state.stars.reduce((a,b)=>a+b,0),n=k+q-1;
+    titles('Stars and separator bars','The same object as box counts');metric(k+' identical stars',q+' labeled boxes',fmt(M.choose(n,q-1))+' distributions');
+    const tokens=[];state.stars.forEach((v,i)=>{for(let j=0;j<v;j++)tokens.push({v:'*',i});if(i<q-1)tokens.push({v:'|',i:-1});});
+    svg('a',280,w=>{const cols=Math.max(1,Math.floor((w-24)/27));return tokens.map((a,i)=>{const x=20+(i%cols)*27,y=55+Math.floor(i/cols)*45;return a.i<0?`<rect x="${x-2}" y="${y-20}" width="4" height="30" fill="var(--foreground)"/>`:`<circle cx="${x}" cy="${y-5}" r="9" fill="${color(a.i)}"/>`;}).join('')+text(12,18,k+' stars + '+(q-1)+' bars')+text(12,250,'Bar positions determine every box count');},'Stars and bars encoding, wrapped into rows in reading order.');
+    svg('b',280,w=>{let s='';state.stars.forEach((v,i)=>{const y=35+i*72;s+=text(12,y+18,String.fromCharCode(65+i)+': '+v);for(let j=0;j<v;j++)s+=`<circle cx="${95+j*28}" cy="${y+14}" r="9" fill="${color(i)}"/>`;});return s;},'Identical stars allocated among three labeled boxes.');
+    $('caption').textContent='A nonnegative count vector, not an ordered word. Zero in a box is allowed; adjacent bars encode empty boxes.';
+    costs('C(k+q−1,q−1)','O(q · C(k+q−1,q−1)) to emit count vectors','O(q)');
+    proof([['x₁ + … + x_q = k, each xᵢ ≥ 0','Here repetition is allowed, but order inside each box has no meaning. Boxes themselves are distinguishable.'],['k stars + (q−1) bars = k+q−1 positions','The bars separate stars into q groups, including possibly empty groups.'],['Choose the bar positions: C(k+q−1,q−1)','This is a bijection: every valid bar placement gives exactly one count vector and vice versa.'],['N vectors × q entries = Θ(qN)','That is explicit-vector enumeration. Emitting sorted length-k multisets instead has a different output length.']]);
+  }
+  function wordView(controls){
+    if(controls)range('Word length d',0,7,state.depth,v=>{state.depth=v;state.word=Array.from({length:v},(_,i)=>state.word[i]??0);});
+    if(state.word.length!==state.depth)state.word=Array.from({length:state.depth},(_,i)=>state.word[i]??0);
+    state.word.forEach((g,i)=>action((i+1)+': '+(g?'b':'a'),()=>state.word[i]=1-g));
+    action('aa = identity',()=>{state.depth=2;state.word=[0,0];});action('aba',()=>{state.depth=3;state.word=[0,1,0];});action('bab',()=>{state.depth=3;state.word=[1,0,1];});
+    const graph=M.s3(),trace=M.trace(state.word),all=M.words(2,state.depth),groups=new Map();all.forEach(word=>{const key=M.trace(word).at(-1).join('');groups.set(key,(groups.get(key)||0)+1);});const endpoint=trace.at(-1).join('');
+    titles('A word is a path','Many paths, six states');metric(fmt(2n**BigInt(state.depth))+' words of this length',groups.size+' endpoints at this exact length',groups.get(endpoint)+' words reach selected endpoint');
+    svg('a',310,w=>{const shown=Math.min(4,state.depth),x=d=>20+d*(w-45)/Math.max(1,shown),nodes=d=>2**d;let s='';for(let d=0;d<=shown;d++)for(let j=0;j<nodes(d);j++){const y=30+(j+.5)*230/nodes(d);if(d<shown)for(let g=0;g<2;g++){const Y=30+(j*2+g+.5)*230/nodes(d+1);s+=line(x(d),y,x(d+1),Y);};s+=`<circle cx="${x(d)}" cy="${y}" r="3" fill="var(--border)"/>`;}let idx=0;for(let d=0;d<shown;d++){const next=idx*2+state.word[d],y=30+(idx+.5)*230/nodes(d),Y=30+(next+.5)*230/nodes(d+1);s+=`<path d="M${x(d)},${y} L${x(d+1)},${Y}" fill="none" stroke="${color(state.word[d])}" stroke-width="4"/>`;idx=next;}return s+text(10,18,'a: swap slots 1,2 / b: swap slots 2,3')+text(10,290,'Tree displays '+shown+' of '+state.depth+' levels');},'Binary tree of move words; selected prefix highlighted.');
+    svg('b',310,w=>{const r=Math.min(100,w/2-40),cx=w/2,cy=145,pts=graph.nodes.map((_,i)=>[cx+r*Math.cos(i*Math.PI/3),cy+r*Math.sin(i*Math.PI/3)]);let s='';graph.edges.forEach(e=>{const a=pts[e.from],b=pts[e.to];s+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${color(e.g)}" stroke-width="2" opacity=".45"/>`+text((a[0]+b[0])/2,(a[1]+b[1])/2,e.g?'b':'a','text-anchor="middle"');});for(let t=1;t<trace.length;t++){const a=pts[graph.nodes.findIndex(p=>p.join('')===trace[t-1].join(''))],b=pts[graph.nodes.findIndex(p=>p.join('')===trace[t].join(''))];s+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${color(state.word[t-1])}" stroke-width="5"/>`;}graph.nodes.forEach((p,i)=>{const [x,y]=pts[i],end=p.join('')===endpoint;s+=`<circle cx="${x}" cy="${y}" r="23" fill="${end?'var(--viz-series-3)':'var(--muted)'}" fill-opacity="${end?.4:1}"/>`+text(x,y+4,p.map(x=>'ABC'[x]).join(''),'text-anchor="middle"');});return s+text(10,290,'Selected: '+(state.word.map(g=>g?'b':'a').join('')||'empty word')+' → '+trace.at(-1).map(x=>'ABC'[x]).join(''));},'Cayley graph of S3 under two adjacent swaps. These are toy swaps, not Rubik face moves.');
+    $('caption').textContent='Toy group S3, not the full cube graph. aa and the empty word agree; aba and bab agree. Same-length words reach only one parity class.';
+    costs('bᵈ words, not bᵈ distinct states','O(max(1,d) · bᵈ) to emit words','O(d)');
+    proof([['b choices per position × d positions = bᵈ','Repeating moves is allowed. The multiplication rule counts paths before any equal endpoints are merged.'],['18ᵈ → 18 · 15ᵈ⁻¹ for d ≥ 1','In cube HTM there are 18 face turns. Disallow a consecutive turn of the same face: 3 choices are removed after each move. This still counts words, not distinct states.'],['Evaluate word: compose moves left to right','Relations collapse paths: RR becomes R2; RR\' becomes identity. Commuting or longer relations cause further collisions.'],['Tree search versus graph search','A visited-state table prevents repeated expansions, trading memory for deduplication. The full cube state graph is still enormous.']]);
+  }
+  function cube(controls){
+    action('Twist one corner',()=>state.twist=(state.twist+1)%3);action('Flip one edge',()=>state.flip=1-state.flip);action('Swap two corners',()=>state.cp=1-state.cp);action('Swap two edges',()=>state.ep=1-state.ep);action('Solved / reset',()=>{state.twist=state.flip=state.cp=state.ep=0;});
+    const valid=state.twist===0&&state.flip===0&&state.cp===state.ep;
+    titles('Orientation constraints','Permutation parity lock');metric(fmt(M.cubeCount())+' legal states',valid?'Reachable from solved':'Unreachable from solved','Fixed centers / ordinary 3x3');
+    svg('a',280,w=>{let s=text(12,20,'Corner twist sum mod 3 = '+state.twist);for(let i=0;i<8;i++){const x=26+(i%4)*(w-45)/4,y=62+Math.floor(i/4)*58,angle=i===0?state.twist*120:0;s+=`<path d="M${x},${y-17} L${x-15},${y+11} L${x+15},${y+11} Z" fill="${color(i)}" fill-opacity=".25" transform="rotate(${angle} ${x} ${y})"/>`+text(x,y+31,'C'+(i+1)+(i===0?' : '+state.twist:''),'text-anchor="middle"');}s+=text(12,187,'Edge flip sum mod 2 = '+state.flip);for(let i=0;i<12;i++){const x=20+(i%6)*(w-35)/6,y=214+Math.floor(i/6)*35;s+=`<rect x="${x-6}" y="${y-8}" width="12" height="16" fill="${color(i)}" fill-opacity=".4"/>`+text(x,y+5,i===0?state.flip:0,'text-anchor="middle"');}return s;},'A deliberate single-corner twist and single-edge flip can violate orientation sums.');
+    svg('b',280,w=>{let s='';[['Corners',state.cp],['Edges',state.ep]].forEach(([label,p],i)=>{const y=52+i*110;s+=text(12,y-20,label+': '+(p?'odd':'even'));const a=50,b=w-55;s+=`<path d="M${a},${y} C${w/2},${y} ${w/2},${y+(p?45:0)} ${b},${y+(p?45:0)}" fill="none" stroke="${color(i*2)}" stroke-width="4"/><path d="M${a},${y+45} C${w/2},${y+45} ${w/2},${y+(p?0:45)} ${b},${y+(p?0:45)}" fill="none" stroke="${color(i*2+1)}" stroke-width="4"/>`;});return s+text(12,270,state.cp===state.ep?'Parity match':'Parity mismatch');},'A swap changes permutation parity; corner and edge parities must match.');
+    $('caption').textContent='These controls deliberately edit cubies, not legal face turns. Matching parity alone is insufficient if a twist or flip sum fails. Both odd permutations are allowed.';
+    costs('8! · 12! · 3⁷ · 2¹¹ / 2','O(1) for fixed 3x3 validation; O(c+e) for cubie arrays','O(c+e) for visited flags');
+    proof([['8! · 12!','Corners permute among corners; edges among edges. Ordinary fixed-center orientation is held fixed.'],['3⁸ / 3 = 3⁷; 2¹² / 2 = 2¹¹','Seven corner twists determine the eighth. Eleven edge flips determine the twelfth.'],['Matching parity removes half: divide by 2','Corners and edges may both be even or both odd. They cannot have different permutation parity.'],['8! · 12! · 3⁷ · 2¹¹ / 2 = '+fmt(M.cubeCount()),'This is a state count, not a runtime. An efficient validator checks bijections, orientation ranges and sums, and parity using cycle decomposition.']]);
+  }
+  function search(controls){
+    if(controls){range('Branching b',2,18,state.b,v=>state.b=v);range('Solution depth d',0,12,state.d,v=>state.d=v);}
+    const b=state.b,d=state.d,one=M.tree(b,d),left=Math.floor(d/2),right=Math.ceil(d/2),two=M.tree(b,left)+M.tree(b,right);
+    titles('One expanding frontier','Meet from both ends');metric('BFS budget: '+fmt(one)+' nodes','Two-tree budget: '+fmt(two)+' nodes','Abstract trees, including roots');
+    function fan(id,depths){const span=Math.max(230,Math.max(...depths)*34);svg(id,span+80,w=>{let s='';depths.forEach((D,part)=>{const base=depths.length===1?0:part*w/2,width=w/depths.length;for(let i=0;i<=D;i++){const y=40+i*span/Math.max(D,1),r=10+(width-48)*.45*i/Math.max(D,1),x=base+width/2;s+=`<rect x="${x-r}" y="${y-5}" width="${r*2}" height="10" fill="${color(part)}" fill-opacity=".35"/>`+text(x,y-10,'depth '+i+': '+fmt(BigInt(b)**BigInt(i)),'text-anchor="middle"');}});return s;},'Aggregate search layers. Bar widths encode depth only; labels give exact node counts.');}
+    fan('a',[d]);fan('b',[left,right]);$('caption').textContent='Widths encode depth, not node count. Budgets assume regular independent trees; real graphs merge paths. Two roots make bidirectional overhead visible at depth zero.';
+    costs('Σᵈᵢ₌₀ bⁱ nodes','BFS O(bᵈ); bidirectional O(b^⌈d/2⌉)','Same exponential bounds for stored frontiers');
+    proof([['1 + b + b² + … + bᵈ = (bᵈ⁺¹−1)/(b−1)','For b≥2, expanding a regular tree through depth d is Θ(bᵈ). Constant per-node transition and goal-check costs are assumed.'],['b^⌊d/2⌋ + b^⌈d/2⌉ = O(b^⌈d/2⌉)','Bidirectional BFS requires a known goal, reverse transitions, meeting detection, and correct layer termination. It is not a free speedup for arbitrary problems.'],['Depth-first: O(bᵈ) time; O(d) path memory','Generate successors on demand. Plain DFS does not certify a shortest solution. Iterative deepening restores shortest-depth guarantees for unit-cost edges.'],['BFS on a finite graph: O(V+E) time, O(V) space','Deduplicate states. For A*/IDA*, admissible heuristics can reduce work but do not promise a universal improved exponential bound. Few moves and fast human execution are different objectives.']]);
+  }
+  const distanceCache=new Map();
+  function dimGraph(){return M.lattice(state.dim,state.lineNine);}
+  function table(g){const k=g.n+':'+g.edges.length;if(!distanceCache.has(k))distanceCache.set(k,M.distances(g));return distanceCache.get(k);}
+  function dimensions(){
+    const g=dimGraph();state.history=state.history.filter(i=>Number.isInteger(i)&&i>=0&&i<g.edges.length);const a=M.boardFromHistory(g,state.history),N=g.n,m=N/3,S=M.fact(N)/M.fact(m)**3n;
+    function setDim(d,line=false,compare=false){state.dim=d;state.lineNine=line;state.compareNine=compare;const G=dimGraph();state.history=M.scramble(G,d===1&&!line?3:18);state.selected=-1;
+      if(compare){let p=[2,2,2,1,1,1,0,0,0];const path=[],dist=table(G);while(dist.get(p.join(''))>0){const e=M.shortestNext(G,p,dist);path.push(e);p=M.swapEdge(p,G.edges[e]);}state.history=path.reverse();}
+    }
+    [1,2,3].forEach(d=>action(d+'D · '+3**d+' positions',()=>setDim(d),state.dim===d&&!state.lineNine));
+    action('Same 9: line',()=>setDim(2,true,true),state.compareNine&&state.lineNine);action('Same 9: grid',()=>setDim(2,false,true),state.compareNine&&!state.lineNine);
+    action('New example',()=>{state.history=M.scramble(g,18,++state.exampleSeed);state.selected=-1;state.compareNine=false;});action('Undo',()=>{state.history.pop();state.selected=-1;});action('Target',()=>{state.history=[];state.selected=-1;});
+    const dist=N<=9?table(g):null,d=dist?.get(a.join('')),lb=Math.ceil(a.reduce((s,c,i)=>s+Math.abs(i%3-c),0)/2);
+    action(N<=9?'Optimal next swap':'Reverse one recorded swap',()=>{if(dist){const i=M.shortestNext(g,a,dist);if(i>=0)state.history.push(i);}else state.history.pop();state.selected=-1;});
+    titles(state.lineNine?'Nine-position line, wrapped':'Current colors'+(state.dim===3?' / z slices':''),'Targets and topology');
+    metric(N+' positions · '+g.edges.length+' allowed swaps',fmt(S)+' color states',dist?'Exact remaining distance: '+d:'Distance bounds: '+lb+' to '+state.history.length);
+    $('a').replaceChildren();
+    const layers=state.dim===3?3:1;
+    for(let z=0;z<layers;z++){
+      if(layers>1){const l=document.createElement('div');l.textContent='z = '+z+' · front/back neighbors share x,y';$('a').append(l);}
+      const grid=document.createElement('div');grid.className='pa-layer';
+      const count=layers>1?9:N;
+      for(let j=0;j<count;j++){
+        const i=z*9+j,neighbor=state.selected>=0&&g.edges.some(e=>e.slice(0,2).includes(i)&&e.slice(0,2).includes(state.selected)&&i!==state.selected);
+        const b=button('',()=>{if(state.selected<0||state.selected===i){state.selected=state.selected===i?-1:i;}else{const e=g.edges.findIndex(e=>e.slice(0,2).includes(i)&&e.slice(0,2).includes(state.selected));if(e>=0){state.history.push(e);state.selected=-1;}else state.selected=i;}render(false);save();},state.selected===i);
+        b.innerHTML=`<span class="pa-token"><svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="10" fill="${color(a[i])}"/></svg>${'ABC'[a[i]]} · ${i+1}${neighbor?' ↔':''}</span>`;
+        b.setAttribute('aria-label','Position '+(i+1)+', current '+('ABC'[a[i]])+', target '+('ABC'[g.target[i]])+(neighbor?', adjacent to selection':''));b.dataset.position=i;grid.append(b);
+      }$('a').append(grid);
+    }
+    svg('b',N===27?410:250,w=>{
+      const coords=Array.from({length:N},(_,i)=>{if(N===3)return [35+i*(w-70)/2,90];const z=Math.floor(i/9),j=i%9;return [30+(j%3)*(w-90)/2,42+Math.floor(j/3)*30+z*120];});let s='';
+      if(N===27)for(let z=0;z<3;z++)s+=text(12,18+z*120,'z = '+z);
+      const trace=state.selected<0?0:state.selected%9;
+      g.edges.forEach(([i,j,axis])=>{const [x,y]=coords[i],[X,Y]=coords[j],active=state.selected>=0&&(i===state.selected||j===state.selected);
+        if(axis===2){if(i%9===trace){const right=w-15;s+=`<path d="M${x},${y} Q${right},${y} ${right},${(y+Y)/2} Q${right},${Y} ${X},${Y}" fill="none" stroke="var(--viz-series-3)" stroke-width="2" stroke-dasharray="4 3"/>`;}return;}
+        s+=`<line x1="${x}" y1="${y}" x2="${X}" y2="${Y}" stroke="${active?'var(--viz-series-1)':'var(--border)'}" stroke-width="${active?3:1.5}"/>`;
+      });
+      coords.forEach(([x,y],i)=>{s+=`<circle cx="${x}" cy="${y}" r="12" fill="${color(g.target[i])}" fill-opacity=".3"/>`+text(x,y+4,'ABC'[g.target[i]],'text-anchor="middle"');});
+      return s+text(10,N===27?382:208,N===27?'Dashed: same x,y across z slices':'Edges = legal neighbor exchanges')+(N===27?text(10,402,'Tracing position '+(trace+1)+' within each slice'):'');
+    },'Target color arrangement on the movement graph. Three-dimensional layers are shown as slices, not a Rubik cube.');
+    const line9=M.lattice(2,true),grid9=M.lattice(2),fixed='222111000',dl=table(line9).get(fixed),dg=table(grid9).get(fixed);
+    $('caption').textContent=(state.selected<0?'Select a token, then a neighboring position. ':'Position '+(state.selected+1)+' selected; ↔ marks its neighbors. ')+(N===27?'3D uses linked 2D slices; lower bound is color transport, upper bound reverses recorded swaps. No optimality claim. ':'The next-swap button follows an exhaustively computed shortest path. ')+`Controlled comparison, same nine colors CCCBBBAAA → ABCABCABC: line ${dl} swaps, grid ${dg} swaps; both 1,680 states.`;
+    costs('S = N! / ((N/3)!)³; N = 3ᴰ','Grid construction O(DN); explicit-state BFS O(N · E · S)','O(N · S) for full-array BFS');
+    proof([['N = 3ᴰ; E = D · 2 · 3ᴰ⁻¹','Choose an axis, one of two gaps along it, and the other D−1 coordinates. This gives 2, 12 and 54 neighbor-swap edges.'],['S = (3ᴰ)! / ((3ᴰ⁻¹)!)³','Three equally numerous colors give 6, 1,680 and '+fmt(M.fact(27)/M.fact(9)**3n)+' color arrangements. Connected graphs permit every such arrangement under neighbor swaps.'],['Fix N=9: same 1,680 states, different distances','Changing the movement graph changes routes, not color assignments. Adding edges cannot increase a shortest-path distance if the old edges are retained; the displayed line and grid are separately defined.'],['Connectivity is not geometric dimension','One frozen puzzle has no asymptotic input growth. Here D and N parameterize a family. These are swap graphs; Rubik face turns are coupled rotations with extra orientation constraints.']]);
+  }
+  const views=[permutation,combination,repeated,stars,wordView,cube,search,dimensions];
+  function render(controls=true){
+    if(controls)$('controls').replaceChildren();$('actions').replaceChildren();
+    $('nav').replaceChildren(...tabs.map((name,i)=>button(name,()=>{state.tab=i;state.proof=0;render();save();},i===state.tab)));
+    views[state.tab](controls);if(window.lucide)window.lucide.createIcons();
+  }
+  function save(){const s={kind:'possibility-atlas-v1',...state};lastKey=JSON.stringify(s);window.openai?.setWidgetState?.({modelContent:{kind:s.kind,view:tabs[state.tab],n:state.n,k:state.k},privateContent:s})?.catch(()=>{});}
+  function restore(raw){const s=raw?.privateContent;if(s?.kind!=='possibility-atlas-v1'||JSON.stringify(s)===lastKey)return;state={...structuredClone(defaults),...s};
+    const clamp=(k,lo,hi)=>state[k]=Math.max(lo,Math.min(hi,Math.trunc(Number(state[k]))||0));
+    for(const [k,lo,hi] of [['tab',0,7],['proof',0,3],['n',3,8],['k',0,8],['rank',0,40319],['progress',0,100],['preset',0,2],['depth',0,7],['twist',0,2],['flip',0,1],['cp',0,1],['ep',0,1],['b',2,18],['d',0,12],['dim',1,3],['selected',-1,26],['multiRank',0,1680],['exampleSeed',0,2147483647]])clamp(k,lo,hi);
+    const arr=(k,max,cap,len)=>{state[k]=Array.isArray(state[k])?state[k].slice(0,cap).map(x=>Math.max(0,Math.min(max,Math.trunc(Number(x))||0))):structuredClone(defaults[k]);if(len&&state[k].length!==len)state[k]=structuredClone(defaults[k]);};
+    arr('multi',3,3,3);arr('stars',5,3,3);arr('word',1,7);arr('subset',7,8);arr('history',53,1000);state.subset=[...new Set(state.subset)].sort((a,b)=>a-b);
+    state.lineNine=!!state.lineNine&&state.dim===2;state.compareNine=!!state.compareNine&&state.dim===2;
+    if(!['generic','corners','edges'].includes(state.source))state.source='generic';if(!['cycles','matrix'].includes(state.lens))state.lens='cycles';render();
+  }
+  $('proof-back').onclick=()=>{state.proof=Math.max(0,state.proof-1);render(false);save();};$('proof-next').onclick=()=>{state.proof=Math.min(steps.length-1,state.proof+1);render(false);save();};
+  render();restore(window.openai?.widgetState);
+  window.addEventListener('openai:set_globals',e=>restore(e.detail?.globals?.widgetState));
+  let resize;new ResizeObserver(()=>{clearTimeout(resize);resize=setTimeout(()=>render(false),80);}).observe(root);
+  window.__possibilityAtlas={getState:()=>structuredClone(state),select:i=>{state.tab=i;state.proof=0;render();},model:M,validate:()=>({cube:M.cubeCount().toString(),word:M.trace(state.word).at(-1),dimensions:[$('a').clientWidth,$('b').clientWidth]})};
+})();
+</script>

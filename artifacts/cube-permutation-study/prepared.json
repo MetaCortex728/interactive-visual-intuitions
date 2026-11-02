@@ -1,0 +1,42 @@
+{
+  "scramble": "F U2 L2 B2 F' U L2 U R2 D2 L' B L2 B' R2 U2",
+  "inspection": "y x'",
+  "human": "U R2 U' F' L F' L' L U' L' U' R U R' R' U R U' U' R' U R U R' U' R U' R' U2 R U",
+  "segments": [
+    [
+      "Cross + first pair",
+      "U R2 U' F' L F' L'"
+    ],
+    [
+      "Second pair",
+      "L U' L'"
+    ],
+    [
+      "Third pair",
+      "U' R U R'"
+    ],
+    [
+      "Fourth pair",
+      "R' U R U' U' R' U R"
+    ],
+    [
+      "Last-layer orientation",
+      "U R' U' R U' R' U2 R"
+    ],
+    [
+      "Final alignment",
+      "U"
+    ]
+  ],
+  "compact": "F2 D2 R U2 R' U B2 D2 F' U2 F' L R2 U2 F2 L'",
+  "solution": "U2 R2 B  L2 B' L  D2 R2 U' L2 U' F  B2 L2 U2 F'",
+  "centers": [
+    4,
+    5,
+    0,
+    1,
+    2,
+    3
+  ],
+  "optimal": false
+}
