@@ -11,7 +11,7 @@
     "build": "node scripts/build.mjs",
     "test:unit": "node artifacts/cube-permutation-study/test-geometry.cjs && node artifacts/possibility-atlas/test.cjs && node artifacts/states-and-moves/test.cjs && node artifacts/states-and-moves/test-sequences.cjs",
     "pretest:browser": "npm run build",
-    "test:browser": "node artifacts/cube-permutation-study/test-browser.cjs && node artifacts/possibility-atlas/test-browser.cjs && node artifacts/states-and-moves/test-browser.cjs && node artifacts/states-and-moves/test-sequence-browser.cjs",
+    "test:browser": "node scripts/test-start-browser.cjs && node artifacts/cube-permutation-study/test-browser.cjs && node artifacts/possibility-atlas/test-browser.cjs && node artifacts/states-and-moves/test-browser.cjs && node artifacts/states-and-moves/test-sequence-browser.cjs",
     "test": "npm run test:unit && npm run test:browser"
   },
   "dependencies": {
