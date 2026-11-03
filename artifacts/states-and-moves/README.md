@@ -39,9 +39,9 @@ The full seven-view explorer and reading are retained under **Explore all fields
 
 `test-sequences.cjs` passes **904 checks** for source/destination maps, inverse replay, cycle endpoints, exact cube geometry and model agreement.
 
-`test-browser.cjs` and `test-sequence-browser.cjs` have been updated for the seven views, five stories and the renamed controls and readouts but have not been run since the trim; they still target the earlier host-rendered export and are being moved to `dist/`. Before the trim, both suites passed in headless Edge at 1100, 736, 390 and 320 pixels for the earlier thirteen views and eight stories; `browser-check.json` and `sequence-browser-check.json` are the records of that earlier run and will be overwritten by the next one. The explorer suite covers every navigation view, representative native controls, parameter extremes, saved-state events, reading-panel synchronization, math/paragraph preservation, light/dark appearance and blocked-network operation. The sequence suite covers all stories, actual Three.js mesh endpoints for all 54 stickers, nonblank/changing canvas pixels, playback/step/scrub/selection, state restoration, reduced motion and the offline net fallback.
+`test-browser.cjs` and `test-sequence-browser.cjs` open `dist/states-and-moves.html` in Playwright's bundled Chromium, headless, at 1100, 736, 390 and 320 pixels, covering the seven views and five stories. Their results and screenshots go to `output/browser/states-and-moves/` and `output/browser/states-and-moves-sequences/`. The explorer suite covers every navigation view, representative native controls, parameter extremes, saved state (from another window and on reopening the page), reading-panel synchronization, math/paragraph preservation, light/dark appearance and blocked-network operation. The sequence suite covers all stories, actual Three.js mesh endpoints for all 54 stickers, nonblank/changing canvas pixels, playback/step/scrub/selection, state restoration (from another window and on reopening the page), reduced motion and the net fallback when Three.js cannot load.
 
-The explorer suite blocks HTTP(S) requests. The sequence suite checks 3D and a separate fallback when Three.js cannot load. There is no server, API call or remote model dependency in the mathematical computations. Three.js and its orbit control are pinned to 0.160.1 and vendored by the build, as for the cube study. WebGL availability can change presentation: the fallback net is explicitly not identical to 3D.
+Both suites block HTTP(S) requests. The sequence suite checks 3D and a separate fallback with the vendored Three.js blocked. There is no server, API call or remote model dependency in the mathematical computations. Three.js and its orbit control are pinned to 0.160.1 and vendored by the build, as for the cube study. WebGL availability can change presentation: the fallback net is explicitly not identical to 3D.
 
 
 ## Files and Reproduction
@@ -52,7 +52,7 @@ The explorer suite blocks HTTP(S) requests. The sequence suite checks 3D and a s
 - `sequence.template.html`, `sequence-model.cjs`, `sequence-data.cjs`: linked visual sequences, shared geometry and traces generated from the existing cube.js engine.
 - `build.cjs`: generates the fragment in `output/` (creating it if missing) and regenerates `GUIDE.md`.
 - `companion.cjs`: the synchronized reading companion; `npm run build` adds it below the explorer in `dist/states-and-moves.html`.
-- `test.cjs`, `test-sequences.cjs`, `test-browser.cjs`, `test-sequence-browser.cjs`: verification; `browser-check.json` and `sequence-browser-check.json` record browser runs.
+- `test.cjs`, `test-sequences.cjs`, `test-browser.cjs`, `test-sequence-browser.cjs`: verification; browser runs write their records to `output/browser/`.
 
 Run these separately from the workspace root:
 
@@ -64,7 +64,7 @@ node artifacts/states-and-moves/test-sequences.cjs
 node artifacts/states-and-moves/test-sequence-browser.cjs
 ```
 
-`npm run build` runs `build.cjs` and uses `marked` to render the preface and afterword for the reading companion. Browser tests use Playwright. The built page needs nothing from the network at viewing time.
+`npm run build` runs `build.cjs` and uses `marked` to render the preface and afterword for the reading companion. Browser tests use Playwright and need the built page, so run `npm run build` first. The built page needs nothing from the network at viewing time.
 
 ## Deliberate Boundaries
 

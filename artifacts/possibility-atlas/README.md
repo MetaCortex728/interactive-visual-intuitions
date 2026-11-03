@@ -18,8 +18,7 @@ The 1D and nine-position models use exact breadth-first search. The same-nine ex
 - `visual.template.html`: editable presentation source.
 - `build.cjs`: embeds the model and position permutations generated using the existing vendored cubejs dependency.
 - `test.cjs`: 34,044 passing assertions, including exhaustive small-state distances, independent inversion parity, combinatorial identities and inverse replay.
-- `test-browser.cjs`: Edge/Playwright interaction checks for the seven views at 1100, 390 and 320 pixels; maximum control values; state restoration; fixed-nine boards; manual and optimal swaps; theme and reduced-motion checks. Before the 2026-11-03 pass it passed for the earlier eight views with zero browser errors and zero overflow/label-bound violations. It has been updated for seven views but has not been run since; `browser-check.json` records the earlier run.
-- `desktop.png`, `mobile.png`, `mobile-derivation.png`, `dimensions-dark.png`: captured views. Mobile derivations were separately inspected after scrolling, since a full-page screenshot need not paint every offscreen iframe region.
+- `test-browser.cjs`: Playwright interaction checks in headless Chromium against `dist/possibility-atlas.html` for the seven views at 1100, 390 and 320 pixels, with the network blocked; maximum control values; state restoration (from another window and on reopening the page); fixed-nine boards; manual and optimal swaps; theme and reduced-motion checks. It requires zero browser errors and zero overflow or label-bound violations. The result (`possibility-atlas.json`) and screenshots (`desktop.png`, `mobile.png`, `mobile-derivation.png`, `dimensions-dark.png`) go to `output/browser/possibility-atlas/`.
 
 ## Rebuild
 
@@ -31,7 +30,7 @@ node artifacts/possibility-atlas/test.cjs
 node artifacts/possibility-atlas/test-browser.cjs
 ```
 
-`npm run build` runs `build.cjs` (fragment in `output/possibility-atlas.html`) and wraps it as `dist/possibility-atlas.html`. The browser test uses Playwright and still targets the earlier host-rendered export; it is being moved to `dist/`. No user browser profile is used by these tests.
+`npm run build` runs `build.cjs` (fragment in `output/possibility-atlas.html`) and wraps it as `dist/possibility-atlas.html`. The browser test opens that page in Playwright's bundled Chromium, so run `npm run build` first (`npm run test:browser` does this for you). No user browser profile is used by these tests.
 
 ## Delivery Evidence
 

@@ -20,6 +20,7 @@ Requires Node.js 24 or later.
 
 ```sh
 npm ci
+npx playwright install chromium
 npm run build
 npm test
 ```
@@ -32,9 +33,22 @@ npm test
 
 Open any of them directly in a browser; no server or network connection is needed. Three.js is copied from `node_modules` into `dist/vendor/three/`, so keep that folder next to the pages if you move them. Where WebGL is unavailable, the cube views fall back to a 2D sticker net. Saved positions are kept in the browser's local storage for each page; if storage is blocked, the pages still work but start fresh each time.
 
-`npm test` runs the Node checks (`npm run test:unit`). `npm run test:browser` runs the Playwright browser suites; they have not yet been updated for the standalone pages.
-
 `dist/` and `output/` are generated and ignored by git.
+
+## Tests
+
+`npm test` runs two groups, in order:
+
+- `npm run test:unit`: Node checks of the mathematics: the cube geometry and stored solutions, the possibility atlas model, and the States and Moves model and visual sequences.
+- `npm run test:browser`: builds `dist/` first, then runs four Playwright suites in headless Chromium against the standalone pages, opened from `file://` with HTTP(S) requests blocked:
+  - `artifacts/cube-permutation-study/test-browser.cjs`: nonblank and changing WebGL canvases, playback, all solved endpoints, piece tracking, alignment, reduced motion, no horizontal overflow on a narrow screen, and the 2D sticker net when Three.js is blocked;
+  - `artifacts/possibility-atlas/test-browser.cjs`: every view at 1100, 390 and 320 pixels, derivation stepping, swaps and distances, light and dark schemes, reduced motion, and labels kept inside their drawings at extreme settings;
+  - `artifacts/states-and-moves/test-browser.cjs`: every chapter at 1100, 736, 390 and 320 pixels, the reading companion's text and its link to the explorer, representative controls, extreme settings, and light and dark schemes;
+  - `artifacts/states-and-moves/test-sequence-browser.cjs`: every visual sequence at the same widths, the 3D cube's sticker positions, play, pause, step, scrub and selection, reduced motion, and the flat fallback when Three.js is blocked.
+
+Every suite also checks saved-state restore, both from another window and on reopening the page, and fails on any page error. Each prints `PASS` or `FAIL` with its duration and writes a result file and screenshots to `output/browser/<suite>/`.
+
+Browser tests need Playwright's Chromium once per machine: `npx playwright install chromium` (on Linux, add `--with-deps` to install system libraries too). The suites use only portable paths and Playwright's own browser, so they are meant to run on Linux and Windows; CI exercises Linux.
 
 ## Layout
 
