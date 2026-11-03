@@ -4,7 +4,7 @@ let checks=0;
 const ok=(x,msg)=>{assert.ok(x,msg);checks++;};
 const near=(a,b,t=1e-9)=>ok(Math.abs(a-b)<=t*Math.max(1,Math.abs(a),Math.abs(b)),`${a} != ${b}`);
 const eq=(a,b)=>{assert.deepEqual(a,b);checks++;};
-eq(M.quotient(false).length,6);eq(M.quotient(true).length,3);M.quotient(true).forEach(g=>eq(g.items.length,2));
+eq(M.colourClasses(false).length,6);eq(M.colourClasses(true).length,3);M.colourClasses(true).forEach(g=>eq(g.items.length,2));
 for(let n=3;n<=40;n++)for(let k=0;k<n;k++){const orbits=M.clock(n,k);eq(orbits.length,M.gcd(n,k));eq(new Set(orbits.flat()).size,n);orbits.forEach(o=>eq(o.length,n/M.gcd(n,k)));}
 const ps=M.permutations([0,1,2]);for(const a of ps){eq(M.compose(a,M.inverse(a)),M.identity);for(const b of ps)for(const c of ps)eq(M.compose(M.compose(a,b),c),M.compose(a,M.compose(b,c)));}
 eq(M.groupWord(['r','r','r']),M.identity);eq(M.groupWord(['s','s']),M.identity);eq(M.groupWord(['s','r','s']),M.inverse(M.r));ok(M.groupWord(['r','s']).join('')!==M.groupWord(['s','r']).join(''));

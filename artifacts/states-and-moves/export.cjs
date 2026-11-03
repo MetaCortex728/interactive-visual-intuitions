@@ -2,14 +2,14 @@ const fs=require('node:fs'),path=require('node:path');
 const {pathToFileURL}=require('node:url');
 (async()=>{
   const {marked}=await import(pathToFileURL(require.resolve('marked')));
-  const target=path.join(__dirname,'mathematics-of-change.html'),chapters=require('./chapters.cjs'),equations=require('./equations.cjs');
+  const target=path.join(__dirname,'states-and-moves.html'),chapters=require('./chapters.cjs'),equations=require('./equations.cjs');
   let html=fs.readFileSync(target,'utf8');
   if(html.includes('id="journey-reading"'))throw Error('Run render.py again before exporting the reading companion.');
   const intro=marked.parse(fs.readFileSync(path.join(__dirname,'preface.md'),'utf8'));
   const after=marked.parse(fs.readFileSync(path.join(__dirname,'afterword.md'),'utf8'));
   const escape=s=>s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
-  const safe=c=>({...c,...Object.fromEntries(['title','field','question','notice','essence','connect','complexity','reflect'].map(k=>[k,escape(c[k])])),derive:c.derive.map(escape)});
-  const articles=chapters.map(safe).map((c,i)=>`<article data-chapter="${i}" ${i?'hidden':''}><p class="eyebrow">Chapter ${String(i+1).padStart(2,'0')} / ${c.field}</p><h2>${c.title}</h2><p class="question">${c.question}</p><p><strong>Notice.</strong> ${c.notice}</p><p><strong>Essence.</strong> ${c.essence}</p>${equations[i].html}<h3>Derive</h3><ol>${c.derive.map(p=>`<li>${p}</li>`).join('')}</ol><p><strong>Connect.</strong> ${c.connect}</p><p><strong>Complexity.</strong> ${c.complexity}</p><p class="contemplate"><strong>Contemplate.</strong> ${c.reflect}</p><div class="reading-links">${c.links.map(j=>`<button type="button" data-go="${j}">${String(j+1).padStart(2,'0')} ${escape(chapters[j].title)}</button>`).join('')}</div></article>`).join('');
+  const safe=c=>({...c,...Object.fromEntries(['title','field','question','notice','essence','connect','reflect'].map(k=>[k,escape(c[k])])),derive:c.derive.map(escape)});
+  const articles=chapters.map(safe).map((c,i)=>`<article data-chapter="${i}" ${i?'hidden':''}><p class="eyebrow">Chapter ${String(i+1).padStart(2,'0')} / ${c.field}</p><h2>${c.title}</h2><p class="question">${c.question}</p><p><strong>Notice.</strong> ${c.notice}</p><p><strong>Essence.</strong> ${c.essence}</p>${equations[i].html}<h3>Derive</h3><ol>${c.derive.map(p=>`<li>${p}</li>`).join('')}</ol><p><strong>Connect.</strong> ${c.connect}</p><p class="contemplate"><strong>Contemplate.</strong> ${c.reflect}</p><div class="reading-links">${c.links.map(j=>`<button type="button" data-go="${j}">${String(j+1).padStart(2,'0')} ${escape(chapters[j].title)}</button>`).join('')}</div></article>`).join('');
   const styles=`<style>
   body{font-family:system-ui,sans-serif;color:light-dark(#202326,#e8e8e8);max-width:1120px;margin:auto;line-height:1.65}
   #journey-reading{max-width:820px;margin:28px auto 72px}#journey-reading h2{font-size:24px;line-height:1.3;margin-top:32px;font-weight:600}#journey-reading h3{font-size:18px;font-weight:600;margin-top:26px}

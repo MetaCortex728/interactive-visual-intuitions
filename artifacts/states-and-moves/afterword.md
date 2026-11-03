@@ -1,12 +1,12 @@
 ## Dimension Is Not One Number
 
-The earlier 1D-to-3D experiment changed both the number of positions and the neighbour graph. For a side-three, D-dimensional lattice, there are N=3^D positions and E=2D*3^(D-1) neighbour edges. With N/3 tokens of each of three colours, the number of arrangements is N!/((N/3)!)^3:
+The earlier 1D-to-3D experiment changed both the number of positions and which positions are neighbours. For a grid three positions wide in D dimensions, there are N = 3^D positions and E = 2 × D × 3^(D-1) neighbouring pairs. With N/3 tokens of each of three colours, the number of arrangements is N!/((N/3)!)^3:
 
 - 1D: N=3, E=2, 6 colour arrangements.
 - 2D: N=9, E=12, 1,680 colour arrangements.
 - 3D: N=27, E=54, 227,873,431,500 colour arrangements.
 
-These are neighbour-swap colour systems, not Rubik's Cubes. A cube turn moves coupled pieces and imposes orientation constraints. Replacing one move rule with the other changes the problem.
+These are puzzles where neighbouring colours swap, not Rubik's Cubes. A cube turn moves several pieces together and adds twist and flip rules. Replacing one move rule with the other changes the problem.
 
 To isolate geometry, keep nine positions and the same colour counts: a line and a 3x3 grid each have 1,680 colour arrangements, but different edges and shortest paths. The size of the possibility set alone does not explain difficulty. "Dimension" can also mean something else again: a circle drawn on a page sits in two coordinates, but a point moving along it needs only one number, its angle, to say where it is.
 
@@ -35,20 +35,12 @@ For example, after merging token identities A and B into one colour, "swap the l
 1. **Error-correcting codes:** parity checks are constraints that define which messages are valid. Several checks together can locate an error rather than merely detect an odd number of flips. This extends the invariant chapter without pretending all puzzle constraints are codes.
 2. **Probability with dice and games:** many board games are random walks on a graph of squares. The same bookkeeping as chapter 6, with probabilities that always add to 1, gives exact chances of landing on each square after a number of turns.
 3. **Planning and routing:** distinguish whether a goal can be reached from how to reach it cheaply, then add costs, obstacles and timing. Maps, delivery routes and robot motion all start from the state-graph picture of chapter 4.
-4. **Computational complexity:** ask which quantities grow. A fixed 3x3 puzzle has finitely many states; claims about how hard growing families of puzzles are require precise rules and proofs. Fast experiments on six or twelve states do not establish scalable algorithms.
-
-These are continuations, not claims that this finite document covers the fields. The test for adding a subject is whether it clarifies a concrete question or exposes a useful connection.
-
-## Research Trail
-
-### Repetition and Symmetry
-
-[Keith Conrad, Group Actions](https://kconrad.math.uconn.edu/blurbs/grouptheory/gpaction.pdf) develops orbits in general. The clock orbits of chapter 2 and the six triangle symmetries of chapter 3 are small first examples of the ideas in these notes. The notes go well beyond the level of this document; they are a continuation, not a prerequisite.
+These are continuations, not claims that this short document covers those fields. The test for adding a subject is whether it clarifies a concrete question or exposes a useful connection.
 
 ## What the Experiments Do and Do Not Establish
 
-The token arrangements, colour classes, clock orbits, triangle compositions, graph paths and the sliding-puzzle component use exact discrete computations. The random-walk view uses floating-point arithmetic alongside an explicit derivation that the total stays 1; displayed probabilities are rounded.
+The token arrangements, colour groups, clock loops, triangle move sequences, shortest routes and the sliding-puzzle check use exact whole-number computations. The random-walk view uses floating-point arithmetic alongside an explicit derivation that the total stays 1; displayed probabilities are rounded.
 
-Numerical checks catch implementation mistakes; they do not replace universal proofs. The saved cube and lattice labs contain the specialized source and optimality distinctions. Human speed-solving is not ranked here by an invented universal score, and no unmeasured advantage is claimed.
+Computer checks catch programming mistakes; they do not replace proofs that cover every case. The cube study and the Possibility Atlas keep the detailed sources and the line between proven shortest routes and merely short ones. Human speed-solving is not ranked here by an invented universal score, and no unmeasured advantage is claimed.
 
 The durable standalone document contains the entire interactive explorer and this reading companion. Browser execution is local to the viewing surface; no personal data or external API is required. Reopening the file preserves the document. State restoration is supported by the host when available and by the standalone wrapper's local fallback; it is not a promise of cross-device synchronization.

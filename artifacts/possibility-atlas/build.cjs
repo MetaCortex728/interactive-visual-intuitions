@@ -7,4 +7,4 @@ const model=fs.readFileSync(path.join(__dirname,'model.cjs'),'utf8');
 const template=fs.readFileSync(path.join(__dirname,'visual.template.html'),'utf8');
 const html=template.replace('/* MODEL */',model).replace('/* PRESETS */','const cubePresets='+JSON.stringify(presets)+';');
 const target=require('path').join(__dirname,'../../output/possibility-atlas.html');
-fs.writeFileSync(target,html);console.log(target,Buffer.byteLength(html));
+fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,html);console.log(target,Buffer.byteLength(html));

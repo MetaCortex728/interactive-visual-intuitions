@@ -1,9 +1,0 @@
-const math=body=>'<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">'+body+'</math>';
-module.exports=[
-  {tex:'|X|=\\frac{N!}{n_1!\\cdots n_k!}',html:math('<mrow><mo>|</mo><mi>X</mi><mo>|</mo><mo>=</mo><mfrac><mrow><mi>N</mi><mo>!</mo></mrow><mrow><msub><mi>n</mi><mn>1</mn></msub><mo>!</mo><mo>&#x22EF;</mo><msub><mi>n</mi><mi>k</mi></msub><mo>!</mo></mrow></mfrac></mrow>')},
-  {tex:'\\operatorname{ord}_{+}(k)=\\frac{n}{\\gcd(n,k)}',html:math('<mrow><mtext>orbit length</mtext><mo>=</mo><mfrac><mi>n</mi><mrow><mi>gcd</mi><mo>(</mo><mi>n</mi><mo>,</mo><mi>k</mi><mo>)</mo></mrow></mfrac></mrow>')},
-  {tex:'r^3=s^2=e,\\qquad srs=r^{-1}',html:math('<mrow><msup><mi>r</mi><mn>3</mn></msup><mo>=</mo><msup><mi>s</mi><mn>2</mn></msup><mo>=</mo><mi>e</mi><mo>,</mo><mspace width="1em"/><mi>s</mi><mi>r</mi><mi>s</mi><mo>=</mo><msup><mi>r</mi><mrow><mo>-</mo><mn>1</mn></mrow></msup></mrow>')},
-  {tex:'d_G(x,y)=\\min_{p:x\\leadsto y}|p|',html:math('<mrow><msub><mi>d</mi><mi>G</mi></msub><mo>(</mo><mi>x</mi><mo>,</mo><mi>y</mi><mo>)</mo><mo>=</mo><munder><mi>min</mi><mrow><mi>p</mi><mo>:</mo><mi>x</mi><mo>&#x219D;</mo><mi>y</mi></mrow></munder><mo>|</mo><mi>p</mi><mo>|</mo></mrow>')},
-  {tex:'I(\\mathrm{legal}(x))\\equiv I(x)\\pmod 2',html:math('<mrow><mtext>legal move</mtext><mo>&#x21D2;</mo><mi>I</mi><mo>(</mo><msup><mi>x</mi><mo>&#x2032;</mo></msup><mo>)</mo><mo>&#x2261;</mo><mi>I</mi><mo>(</mo><mi>x</mi><mo>)</mo><mspace width="0.3em"/><mtext>mod 2</mtext></mrow>')},
-  {tex:'\\sum_j p_j^{(t+1)}=\\sum_j p_j^{(t)}=1',html:math('<mrow><munder><mo>&#x2211;</mo><mi>j</mi></munder><msubsup><mi>p</mi><mi>j</mi><mrow><mo>(</mo><mi>t</mi><mo>+</mo><mn>1</mn><mo>)</mo></mrow></msubsup><mo>=</mo><munder><mo>&#x2211;</mo><mi>j</mi></munder><msubsup><mi>p</mi><mi>j</mi><mrow><mo>(</mo><mi>t</mi><mo>)</mo></mrow></msubsup><mo>=</mo><mn>1</mn></mrow>')}
-];

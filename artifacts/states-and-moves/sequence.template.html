@@ -47,11 +47,11 @@ const sequenceData=/* SEQUENCE DATA */;
   const NS='http://www.w3.org/2000/svg',colors=['#eeeeea','#e5484d','#23ae7c','#f2cf38','#f28b32','#367ee8'];
   const series=i=>'var(--viz-series-'+(i%6+1)+')',face='URFDLB',label=id=>face[Math.floor(id/9)]+(id%9+1);
   const stories=[
-    {name:'1D · Order',title:'Three identities, three swaps',chapter:0,key:'line',left:'Colored identities in fixed slots',right:'The same swap, as a cycle'},
+    {name:'1D · Order',title:'Three identities, three swaps',chapter:0,key:'line',left:'Coloured identities in fixed slots',right:'The same swap, as a cycle'},
     {name:'2D · Reachability',title:'Local moves preserve a global constraint',chapter:4,key:'grid',left:'A blank moves through the grid',right:'The blank and a tile exchange places'},
     {name:'3D · Cube',title:'One face turn, five coupled cycles',chapter:2,key:'cube',left:'One physical action',right:'The same action on sticker positions'},
-    {name:'Composition',title:'Same ingredients. Different order.',chapter:2,length:2,left:'Rotate, then reflect',right:'Reflect, then rotate'},
-    {name:'Probability',title:'Mass splits; total mass stays',chapter:5,length:8,left:'Distribution on six positions',right:'Mass in transit: one exact step'},
+    {name:'Two orders',title:'Same ingredients. Different order.',chapter:2,length:2,left:'Rotate, then reflect',right:'Reflect, then rotate'},
+    {name:'Probability',title:'Probability splits; the total stays',chapter:5,length:8,left:'Distribution on six positions',right:'Probability in transit: one exact step'},
   ];
   let state={story:2,position:0,selected:null,lazy:true},running=false,raf=0,last=0,THREE,OrbitControls,threePromise,view3d,visible=true;
   const current=()=>stories[state.story],data=()=>sequenceData[current().key],length=()=>data()?.labels.length||current().length;
@@ -87,7 +87,7 @@ const sequenceData=/* SEQUENCE DATA */;
     if(state.story===0){const a=d.states[Math.round(state.position)],inv=M.inversions(a.map(x=>x+1));return atEnd?`Order ${a.map(x=>'ABC'[x]).join(' · ')} · ${inv} inversions remain.`:'Two identities exchange positions; neither is created or lost.';}
     if(state.story===1)return 'Legal blank moves preserve the inversion parity of the eight numbered tiles.';
     if(state.story===2){if(state.position===4)return 'Four moves do not cancel: order matters. Next, undo them in reverse order.';if(state.position===8)return 'All 54 identities restored: reverse the order and invert every move.';return `${d.labels[index]} · 5 disjoint 4-cycles · 20 stickers move, 34 stay fixed${fraction===1?' · endpoint reached':''}.`;}
-    if(state.story===3)return state.position===2?'Different endpoints: composition remembers order.':'Identities stay the same; their destinations depend on operation order.';
+    if(state.story===3)return state.position===2?'Different endpoints: combining moves remembers their order.':'Identities stay the same; their destinations depend on operation order.';
     return 'Every outgoing fraction arrives somewhere: total probability stays 1.';
   }
   function render(){if(!visible)return;const c=current(),n=length(),seg=S.segment(state.position,n),t=smooth(seg.fraction);$('step').textContent=`${Number(state.position.toFixed(2))} / ${n}`;$('progress').value=state.position;$('back').disabled=state.position===0;$('forward').disabled=state.position>=n;
@@ -114,16 +114,16 @@ const sequenceData=/* SEQUENCE DATA */;
         s.append(svg('circle',{cx:pos[0],cy:pos[1],r:2,fill:'var(--foreground)',opacity:.4}));
       });
     });
-    txt(s,W/2,17,isCube?'Five cycles of length four':'Positions cycle; the colored identities travel');
+    txt(s,W/2,17,isCube?'Five cycles of length four':'Positions cycle; the coloured identities travel');
   }
   function renderNet(k,t){const a=data().states[k+(t===1?1:0)],{s,W}=canvas($('left'),'Unfolded cube: endpoint fallback'),cell=Math.min((W-24)/9,27);for(let f=0;f<6;f++){const x0=(f%3)*3*cell+(W-9*cell)/2,y0=Math.floor(f/3)*4*cell+28;txt(s,x0+1.5*cell,y0-8,face[f]);for(let j=0;j<9;j++){const id=a[9*f+j];s.append(svg('rect',{x:x0+j%3*cell+1,y:y0+Math.floor(j/3)*cell+1,width:cell-2,height:cell-2,fill:colors[Math.floor(id/9)]}));}}}
   function triangle(host,word,k,t){const {s,W}=canvas(host,'Triangle identities and chronological operations'),r=Math.min(W*.28,90),cx=W/2,cy=140,pts=S.identity(3).map(i=>[cx+r*Math.sin(i*2*Math.PI/3),cy-r*Math.cos(i*2*Math.PI/3)]),from=M.groupWord(word.slice(0,k)),next=M.groupWord(word.slice(0,k+1)),angle=(k?word[1]:word[0])==='r'?2*Math.PI*t/3:0;
     path(s,[...pts,pts[0]],'var(--border)');from.forEach((pos,id)=>{let v;if(word[k]==='r'){const x=pts[pos][0]-cx,y=pts[pos][1]-cy;v=[cx+x*Math.cos(angle)-y*Math.sin(angle),cy+x*Math.sin(angle)+y*Math.cos(angle)];}else{v=mix(pts[pos],pts[next[id]],t);const dx=pts[next[id]][0]-pts[pos][0],dy=pts[next[id]][1]-pts[pos][1],len=Math.hypot(dx,dy)||1;v[0]-=dy/len*28*Math.sin(Math.PI*t);v[1]+=dx/len*28*Math.sin(Math.PI*t);}token(s,...v,id,series(id),21,'ABC'[id]);});pts.forEach((p,i)=>txt(s,p[0],p[1]+33,'slot '+i));txt(s,W/2,275,word.join(' → '));}
   function renderComposition(k,t){triangle($('left'),['r','s'],k,t);triangle($('right'),['s','r'],k,t);$('selection').textContent='r: 120° rotation · s: reflection. In-between reflection frames are visual interpolation, not triangle symmetries.';}
-  function renderProbability(k,t){const alpha=state.lazy?.5:0,a=M.randomWalk(6,alpha,k),b=M.average(a,alpha),p=mix(a,b,t),{s,W}=canvas($('left'),'Probability mass distribution'),rad=Math.min(W/2-45,98),pts=S.identity(6).map(i=>[W/2+rad*Math.sin(i*Math.PI/3),150-rad*Math.cos(i*Math.PI/3)]);pts.forEach((v,i)=>line(s,v,pts[(i+1)%6]));p.forEach((v,i)=>{token(s,...pts[i],i,series(i%2),Math.sqrt(64+625*v),i);txt(s,pts[i][0],pts[i][1]+38,v.toFixed(3));});
-    const g=canvas($('right'),'Outgoing mass equals arriving mass'),x=i=>26+i*(g.W-52)/5,y1=65,y2=235;
+  function renderProbability(k,t){const alpha=state.lazy?.5:0,a=M.randomWalk(6,alpha,k),b=M.average(a,alpha),p=mix(a,b,t),{s,W}=canvas($('left'),'Probability on six positions'),rad=Math.min(W/2-45,98),pts=S.identity(6).map(i=>[W/2+rad*Math.sin(i*Math.PI/3),150-rad*Math.cos(i*Math.PI/3)]);pts.forEach((v,i)=>line(s,v,pts[(i+1)%6]));p.forEach((v,i)=>{token(s,...pts[i],i,series(i%2),Math.sqrt(64+625*v),i);txt(s,pts[i][0],pts[i][1]+38,v.toFixed(3));});
+    const g=canvas($('right'),'Outgoing probability equals arriving probability'),x=i=>26+i*(g.W-52)/5,y1=65,y2=235;
     a.forEach((v,i)=>{for(const [j,w]of [[i,alpha],[(i+5)%6,(1-alpha)/2],[(i+1)%6,(1-alpha)/2]]){const mass=v*w;if(mass<1e-8)continue;line(g.s,[x(i),y1],[x(j),y2],series(i%2),1+mass*10,{opacity:.45});const pos=mix([x(i),y1],[x(j),y2],t);g.s.append(svg('circle',{cx:pos[0],cy:pos[1],r:3+10*Math.sqrt(mass),fill:series(i%2),opacity:.65}));}});
-    for(let i=0;i<6;i++){txt(g.s,x(i),43,i);txt(g.s,x(i),263,i);}txt(g.s,g.W/2,18,'Before step '+(k+1));txt(g.s,g.W/2,292,'After step '+(k+1));$('selection').textContent='Mass '+p.reduce((a,b)=>a+b,0).toFixed(3)+' · moving dots represent mass fractions, not sampled individuals.';
+    for(let i=0;i<6;i++){txt(g.s,x(i),43,i);txt(g.s,x(i),263,i);}txt(g.s,g.W/2,18,'Before step '+(k+1));txt(g.s,g.W/2,292,'After step '+(k+1));$('selection').textContent='Total probability '+p.reduce((a,b)=>a+b,0).toFixed(3)+' · moving dots represent shares of probability, not sampled individuals.';
   }
   async function setup3D(){if(view3d||threePromise)return;threePromise=(async()=>{try{THREE=await import('https://esm.sh/three@0.160.1');({OrbitControls}=await import('https://esm.sh/three@0.160.1/examples/jsm/controls/OrbitControls.js'));const host=node('div',{class:'story-scene'}),renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));host.append(renderer.domElement);
       const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(35,1,.1,100);camera.position.set(6,5,7);camera.lookAt(0,0,0);const controls=new OrbitControls(camera,renderer.domElement);controls.enablePan=false;controls.minDistance=5;controls.maxDistance=14;
