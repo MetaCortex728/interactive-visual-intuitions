@@ -48,7 +48,7 @@ Open any of them directly in a browser; no server or network connection is neede
 
 Every suite also checks saved-state restore, both from another window and on reopening the page, and fails on any page error. Each prints `PASS` or `FAIL` with its duration and writes a result file and screenshots to `output/browser/<suite>/`.
 
-Browser tests need Playwright's Chromium once per machine: `npx playwright install chromium` (on Linux, add `--with-deps` to install system libraries too). The suites use only portable paths and Playwright's own browser, so they are meant to run on Linux and Windows; CI exercises Linux.
+Browser tests need Playwright's Chromium once per machine: `npx playwright install chromium` (on Linux, add `--with-deps` to install system libraries too). The suites use only portable paths and Playwright's own browser, so they are meant to run on Linux and Windows; CI exercises Linux. CI (`.github/workflows/ci.yml`) builds and runs `npm test` on every push and pull request, and uploads `output/` when a run fails.
 
 ## Layout
 
