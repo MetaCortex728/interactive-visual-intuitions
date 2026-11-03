@@ -1,71 +1,42 @@
 # States and Moves
 
-Built 2026-10-28 to explore elementary mathematics around the cube, step by step and interactively, without artificial subject boundaries.
-
-## Open
-
-- `dist/states-and-moves.html` (after `npm ci` and `npm run build` in the repository root): sequence-first explorer plus synchronized reading companion, native MathML equations, and a complete-reading option. Everything works offline, opened directly from disk. The cube's 3D rendering uses the vendored Three.js in `dist/vendor/three/` and needs WebGL; without WebGL it is shown as an endpoint net.
-- [Reading source](GUIDE.md): approximately 3,800 words including derivations, reflection prompts and further branches.
-
-The existing cube and possibility-atlas outputs are unchanged. Their specialized experiments are linked as companion labs, not silently reimplemented or mislabelled as new findings.
-
-## Plain Language and New Name (1.3)
-
-On 2026-11-03 the lab directory and the document were renamed States and Moves (git history records the earlier name); the build now writes `output/states-and-moves.html` and creates `output/` if needed. The six chapters, equations, preface, afterword and on-screen text were rewritten for a curious secondary-school reader: group-theory vocabulary was replaced by everyday descriptions, field labels became plain ones (Counting, Clock arithmetic, Order of actions, Shortest routes, Things that never change, Chance), and the running-time ("Complexity") part of every chapter was removed from the data, the reading, the guide and the explorer. University-level reading links were dropped. The exact claims and the distinction between proofs, complete computer checks and illustrations are unchanged.
-
-## Elementary Scope (1.2)
-
-On 2026-11-03 the journey was trimmed to material a secondary-school reader can follow through the visuals. The chapters on necklace counting, linear maps, continuous flows, hidden modes, optimization and loops around a hole were removed, together with their views, model functions, equations, reading text, visual sequences and tests. The probability chapter now shows only a random walk on a six-cycle: probability moves between states and always adds to 1.
-
-## Sequence-First Revision (1.1)
-
-Following Han's visual reference, the default view pairs concrete action and abstract structure on one playhead. Five stories cover three-token ordering, sliding-grid reachability, cube sticker cycles, operation order and probability flow. Play/pause, previous/next transition, direct sequence selection and fractional scrubbing update both views. Colour identities persist; cube stickers have unique home-face/position IDs. Clicking either representation selects the corresponding identity. The cube sequence is the four moves R U R' U' followed by the same moves undone in reverse order, not a new shortest-solve claim.
-
-The full seven-view explorer and reading are retained under **Explore all fields**. These five opening traces are guided illustrations, not a replacement for the interactive chapters. The 1D/2D/3D examples use different move rules; the dimension-only comparison remains in the linked atlas.
+Elementary mathematics around states and moves, in plain language for secondary-school readers. Built as `dist/states-and-moves.html` by `npm run build` from the repository root: five linked visual sequences, an explorer with six chapters and a connection map, and a reading companion below them.
 
 ## Contents
 
-1. Identity, colour classes and counting arrangements.
-2. Repeated steps on a clock and modular arithmetic.
-3. Triangle symmetries: the order of two moves matters.
-4. Moves as edges, arrangements as states, and shortest paths.
-5. Sliding-puzzle parity and impossible states.
-6. A random walk on a six-cycle: probability moves, its total stays 1.
-7. A navigable connection map.
+Visual sequences (the opening view): three-token ordering, sliding-grid reachability, cube sticker cycles, the order of two operations, and probability flow. Each pairs a concrete action with its structure on one playhead, with play, pause, step, scrub and selection. The cube sequence is `R U R' U'` followed by the same moves undone in reverse order, not a shortest-solve claim.
 
-## Verification
+Chapters (under **Explore all fields**):
 
-`node artifacts/states-and-moves/test.cjs` passes **189,328 assertions**. These include all **181,440 reachable standard 3x3 sliding-puzzle states**, colour groups, clock loops, triangle move combinations and reverse moves, shortest routes, probability normalization and nonnegativity, and the unchanged even distribution. Enumeration is finite evidence; the document separately supplies mathematical derivations.
+1. Counting: identity, colour classes and arrangements.
+2. Clock arithmetic: repeated steps on a clock.
+3. Order of actions: triangle symmetries, where the order of two moves matters.
+4. Shortest routes: arrangements as states, moves as edges.
+5. Things that never change: sliding-puzzle parity and impossible states.
+6. Chance: a random walk on a six-cycle; probability moves but always adds to 1.
 
-`test-sequences.cjs` passes **904 checks** for source/destination maps, inverse replay, cycle endpoints, exact cube geometry and model agreement.
+A connection map links the chapters. The cube work reuses `../cube-permutation-study/vendor/cube.cjs` and `data.json`; the dimension-only token comparison is left to The Shape of Possibility.
 
-`test-browser.cjs` and `test-sequence-browser.cjs` open `dist/states-and-moves.html` in Playwright's bundled Chromium, headless, at 1100, 736, 390 and 320 pixels, covering the seven views and five stories. Their results and screenshots go to `output/browser/states-and-moves/` and `output/browser/states-and-moves-sequences/`. The explorer suite covers every navigation view, representative native controls, parameter extremes, saved state (from another window and on reopening the page), reading-panel synchronization, math/paragraph preservation, light/dark appearance and blocked-network operation. The sequence suite covers all stories, actual Three.js mesh endpoints for all 54 stickers, nonblank/changing canvas pixels, playback/step/scrub/selection, state restoration (from another window and on reopening the page), reduced motion and the net fallback when Three.js cannot load.
+## Sources and how the data is built
 
-Both suites block HTTP(S) requests. The sequence suite checks 3D and a separate fallback with the vendored Three.js blocked. There is no server, API call or remote model dependency in the mathematical computations. Three.js and its orbit control are pinned to 0.160.1 and vendored by the build, as for the cube study. WebGL availability can change presentation: the fallback net is explicitly not identical to 3D.
+- `model.cjs`: the shared discrete model and random-walk update.
+- `chapters.cjs`, `equations.cjs`, `preface.md`, `afterword.md`: reading content and typeset equations (native MathML).
+- `visual.template.html`: explorer source.
+- `sequence.template.html`, `sequence-model.cjs`, `sequence-data.cjs`: visual sequences, shared geometry, and traces generated with the cubejs engine.
+- `build.cjs`: writes the fragment to `output/states-and-moves.html` and regenerates `GUIDE.md`, the full reading (about 3,800 words).
+- `companion.cjs`: the reading companion, rendered with `marked` and added below the explorer by `npm run build`.
 
+The 3D cube uses the vendored Three.js in `dist/vendor/three/` and needs WebGL; without it the cube is shown as a flat net, which is not identical to the 3D view.
 
-## Files and Reproduction
+## Checks
 
-- `model.cjs`: shared discrete model and random-walk update.
-- `chapters.cjs`, `equations.cjs`, `preface.md`, `afterword.md`: reading content and typeset laws.
-- `visual.template.html`: interactive fragment source.
-- `sequence.template.html`, `sequence-model.cjs`, `sequence-data.cjs`: linked visual sequences, shared geometry and traces generated from the existing cube.js engine.
-- `build.cjs`: generates the fragment in `output/` (creating it if missing) and regenerates `GUIDE.md`.
-- `companion.cjs`: the synchronized reading companion; `npm run build` adds it below the explorer in `dist/states-and-moves.html`.
-- `test.cjs`, `test-sequences.cjs`, `test-browser.cjs`, `test-sequence-browser.cjs`: verification; browser runs write their records to `output/browser/`.
+- `test.cjs`: 189,328 assertions, including all 181,440 reachable 3 × 3 sliding-puzzle states, colour groups, clock loops, triangle move combinations and reverse moves, shortest routes, and probability that stays nonnegative and adds to 1.
+- `test-sequences.cjs`: 904 checks of source and destination maps, inverse replay, cycle endpoints, exact cube geometry and agreement with the model.
+- `test-browser.cjs`: headless Chromium at 1100, 736, 390 and 320 pixels with HTTP(S) blocked: every chapter, representative controls, extreme settings, saved-state restore (from another window and on reopening), the reading companion's synchronization and its link to the explorer, and light and dark schemes.
+- `test-sequence-browser.cjs`: every sequence at the same widths, the Three.js mesh positions of all 54 stickers, nonblank and changing canvas pixels, play, pause, step, scrub and selection, saved-state restore, reduced motion, and the flat fallback when Three.js is blocked.
 
-Run these separately from the workspace root:
+Browser results and screenshots go to `output/browser/states-and-moves/` and `output/browser/states-and-moves-sequences/`. Enumeration is finite evidence; the reading supplies the derivations.
 
-```sh
-npm run build
-node artifacts/states-and-moves/test.cjs
-node artifacts/states-and-moves/test-browser.cjs
-node artifacts/states-and-moves/test-sequences.cjs
-node artifacts/states-and-moves/test-sequence-browser.cjs
-```
+## Limits
 
-`npm run build` runs `build.cjs` and uses `marked` to render the preface and afterword for the reading companion. Browser tests use Playwright and need the built page, so run `npm run build` first. The built page needs nothing from the network at viewing time.
-
-## Deliberate Boundaries
-
-This is a substantive connected learning path, not an exhaustive encyclopedia, theorem prover or arbitrary-cube optimal solver. Every experiment names its state space and rules. Results on fixed-size examples say nothing about how hard larger versions of a puzzle are. Saved state is kept in this browser's local storage only; cross-device synchronization is not promised.
+This is a connected learning path, not an encyclopedia, theorem prover or cube solver. Every experiment names its states and rules, and results on fixed small examples say nothing about how hard larger puzzles are. The sequences are guided illustrations, and the 1D, 2D and 3D examples use different move rules. Saved state stays in this browser's local storage. How well the page helps learners has not been measured.

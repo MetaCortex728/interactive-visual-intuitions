@@ -1,65 +1,71 @@
 # Interactive Visual Intuitions
 
-Interactive browser visualizations that build intuition for elementary mathematics: counting and arrangement, order of operations, paths between states, and chance.
+Interactive browser labs that build intuition for elementary mathematics: counting and arrangements, the order of actions, routes between states, and chance. They are made for curious secondary-school learners and their teachers: every idea is something you can change and watch, with a plain-language explanation beside it. The pages run offline in any modern browser, straight from disk.
 
-## Origin
+## The labs
 
-Han developed these studies locally in October 2026 with OpenAI Codex as a coding assistant, without version control. This repository starts from that local snapshot (2026-10-28 sources) and continues development here.
+### States and Moves
 
-The first commit imports the sources as they were, except for files that cannot be redistributed in this repository:
+Six short chapters: counting arrangements, clock arithmetic, why the order of two moves matters, shortest routes between states, things that never change (such as sliding-puzzle parity), and chance as a random walk whose probabilities always add to 1. It opens with five animated stories that show a physical action and its structure on one playhead, and a reading companion follows along below the explorer.
 
-- HTML exports produced by the original host renderer, whose wrapper code is not part of this project;
-- the min2phase.js solver (GPL-3.0), used only to precompute two cube solutions that are now stored in `prepared.json` (see [License](#license));
-- screenshots and a delivery record tied to the original machine.
+![States and Moves: a cube turn shown beside the cycles it makes on sticker positions](docs/images/states-and-moves.png)
 
-Paths to the original machine were replaced on import: build scripts write to `output/`, and browser tests load `playwright` as an ordinary package. The labs were first shown inside a host page that supplied colours, fonts and saved state; that role is now played by this repository's own page shell (see [Build and open](#build-and-open)).
+### The Shape of Possibility
 
-## Build and open
+Count permutations, combinations, arrangements with repeated colours, and "stars and bars" groupings, each with a step-by-step derivation. Then rearrange coloured tokens on a line, a 3 × 3 grid and a 3 × 3 × 3 block, and see how the shape of the board changes the number of swaps needed.
 
-Requires Node.js 24 or later.
+![The Shape of Possibility: three coloured tokens on a line, with the allowed swaps and the remaining distance](docs/images/possibility-atlas.png)
+
+### Cube paths and permutations
+
+Three cases, each played as two routes side by side on two cubes from the same starting position: a recorded speedsolve against a much shorter computed route, a four-turn shortest solution against a familiar trigger repeated five times, and the Superflip position with its proven 20-turn minimum against a 21-turn computed route. Step through the turns, follow a single piece, and compare the length of a route with what it does to the pieces.
+
+![Cube paths and permutations: a recorded human solve and a shorter computed route side by side](docs/images/cube-permutation-study.png)
+
+## Quick start
+
+Requirements: Node.js 24.
 
 ```sh
 npm ci
-npx playwright install chromium
 npm run build
-npm test
 ```
 
-`npm run build` runs each lab's build script (fragments go to `output/`) and writes complete standalone pages to `dist/`:
+Then open `dist/index.html` in a browser. It links the three labs, and each lab links back. No server or network connection is needed. Keep `dist/vendor/` next to the pages if you move them: it holds the copy of Three.js used by the 3D cube views. Where WebGL is unavailable, the cube views fall back to a flat sticker net. Each page saves its settings in this browser's local storage; if storage is blocked, the pages still work but start fresh each time.
 
-- `dist/cube-permutation-study.html`
-- `dist/possibility-atlas.html`
-- `dist/states-and-moves.html` (explorer plus reading companion)
+`npm run build` runs each lab's build script (fragments go to `output/`) and wraps them in a shared page shell (`scripts/shell.html`) as standalone pages in `dist/`. Both folders are generated and ignored by git.
 
-Open any of them directly in a browser; no server or network connection is needed. Three.js is copied from `node_modules` into `dist/vendor/three/`, so keep that folder next to the pages if you move them. Where WebGL is unavailable, the cube views fall back to a 2D sticker net. Saved positions are kept in the browser's local storage for each page; if storage is blocked, the pages still work but start fresh each time.
-
-`dist/` and `output/` are generated and ignored by git.
+To refresh the screenshots above after a build: `node scripts/capture-screenshots.cjs`.
 
 ## Tests
 
-`npm test` runs two groups, in order:
+The browser tests need Playwright's Chromium once per machine: `npx playwright install chromium` (on Linux, add `--with-deps` for the system libraries). Then:
 
-- `npm run test:unit`: Node checks of the mathematics: the cube geometry and stored solutions, the possibility atlas model, and the States and Moves model and visual sequences.
-- `npm run test:browser`: builds `dist/` first, then runs four Playwright suites in headless Chromium against the standalone pages, opened from `file://` with HTTP(S) requests blocked:
-  - `artifacts/cube-permutation-study/test-browser.cjs`: nonblank and changing WebGL canvases, playback, all solved endpoints, piece tracking, alignment, reduced motion, no horizontal overflow on a narrow screen, and the 2D sticker net when Three.js is blocked;
-  - `artifacts/possibility-atlas/test-browser.cjs`: every view at 1100, 390 and 320 pixels, derivation stepping, swaps and distances, light and dark schemes, reduced motion, and labels kept inside their drawings at extreme settings;
-  - `artifacts/states-and-moves/test-browser.cjs`: every chapter at 1100, 736, 390 and 320 pixels, the reading companion's text and its link to the explorer, representative controls, extreme settings, and light and dark schemes;
-  - `artifacts/states-and-moves/test-sequence-browser.cjs`: every visual sequence at the same widths, the 3D cube's sticker positions, play, pause, step, scrub and selection, reduced motion, and the flat fallback when Three.js is blocked.
+```sh
+npm test
+```
 
-Every suite also checks saved-state restore, both from another window and on reopening the page, and fails on any page error. Each prints `PASS` or `FAIL` with its duration and writes a result file and screenshots to `output/browser/<suite>/`.
+runs two groups:
 
-Browser tests need Playwright's Chromium once per machine: `npx playwright install chromium` (on Linux, add `--with-deps` to install system libraries too). The suites use only portable paths and Playwright's own browser, so they are meant to run on Linux and Windows; CI exercises Linux. CI (`.github/workflows/ci.yml`) builds and runs `npm test` on every push and pull request, and uploads `output/` when a run fails.
+- `npm run test:unit`: Node checks of the mathematics: cube geometry and the stored solutions, the counting and swap-distance model of The Shape of Possibility, and the States and Moves model and visual sequences.
+- `npm run test:browser`: builds `dist/`, then opens the pages from `file://` in headless Chromium with HTTP(S) requests blocked:
+  - the start page: every card opens a built lab without page errors, every lab links back, keyboard order, light and dark schemes, and no horizontal overflow at 320 and 1100 pixels;
+  - the four lab suites: every view at desktop and phone widths, playback and other controls, extreme settings, labels kept inside their drawings, light and dark schemes, reduced motion, saved-state restore, and the flat fallback when Three.js cannot load (each lab's README lists its own checks).
 
-## Layout
+Every suite fails on any page error, prints `PASS` or `FAIL`, and writes a result file and screenshots to `output/browser/<suite>/`. CI (`.github/workflows/ci.yml`) runs `npm test` on every push and pull request and uploads `output/` when a run fails.
 
-- `scripts/shell.html`, `scripts/build.mjs`: the page shell (colours for light and dark schemes, system fonts, local saved state, icons) and the build that wraps each lab's fragment in it.
+## Project layout
 
-- `artifacts/cube-permutation-study/`: a human speedsolve, a shorter computed route and a short commutator, shown as cube moves and permutations side by side.
-- `artifacts/possibility-atlas/`: permutations, combinations, repeated colours and token arrangements in one, two and three dimensions.
-- `artifacts/states-and-moves/`: States and Moves, six interactive chapters in plain language (counting, clock arithmetic, order of actions, shortest routes, things that never change, and chance) plus a connection map, five linked visual sequences and a reading companion for secondary-school readers; it imports the cube study's `vendor/cube.cjs` and `data.json`.
+- `scripts/`: the page shell, the build (`build.mjs`), the shared browser-test harness, the start-page test and the screenshot script.
+- `artifacts/states-and-moves/`, `artifacts/possibility-atlas/`, `artifacts/cube-permutation-study/`: one folder per lab with its model, page template, build script, tests and a README on sources, data and limits.
+- `docs/images/`: README screenshots.
+
+## Project history
+
+Han developed these studies locally in October 2026 with OpenAI Codex as a coding assistant, without version control. This repository continues from that local snapshot (2026-10-28 sources), scoped down to elementary material. The first commit imports the sources as they were, except for files that could not be redistributed here: HTML exports from the original host renderer, the GPL-3.0 min2phase.js solver (see [License](#license)), and screenshots and a delivery record tied to the original machine. Later commits trimmed the labs to an elementary scope, rewrote them in plain language, and replaced the original host page with this repository's own page shell and build.
 
 ## License
 
-Licensed under the Apache License, Version 2.0; see `LICENSE`. Third-party notices are in `NOTICE`. The built pages bundle Three.js (MIT), copied from npm into `dist/vendor/three/` with its licence.
+Licensed under the Apache License, Version 2.0; see `LICENSE`. Third-party notices are in `NOTICE`. The built pages include Three.js (MIT), copied from npm into `dist/vendor/three/` with its licence.
 
 The cube study's two stored solver results (the 16-move route for the Du scramble and the 21-turn two-phase result for Superflip) were computed once with [min2phase.js](https://github.com/cs0x7f/min2phase.js) by Chen Shuang (GPL-3.0). That solver is not included in this repository and is not required to build or test it; the build scripts read the stored solutions from `artifacts/cube-permutation-study/prepared.json` and verify that each one solves its scramble.
