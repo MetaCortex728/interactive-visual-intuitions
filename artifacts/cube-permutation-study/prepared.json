@@ -38,5 +38,9 @@
     2,
     3
   ],
-  "optimal": false
+  "optimal": false,
+  "superflip": {
+    "scramble": "R L U2 F U' D F2 R2 B2 L U2 F' B' U R2 D F2 U R2 U",
+    "twoPhase": "R  L  F  U2 R2 U' D' F2 R' F  B  U  L2 B2 D2 R2 D' L2 D  B2 D"
+  }
 }

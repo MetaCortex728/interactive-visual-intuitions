@@ -9,7 +9,7 @@ Han developed these studies locally in October 2026 with OpenAI Codex as a codin
 The first commit imports the sources as they were, except for files that cannot be redistributed in this repository:
 
 - HTML exports produced by the Codex visualization renderer, whose wrapper code is not part of this project;
-- `min2phase.js` (GPL-3.0), used only to precompute two cube solutions that remain in `prepared.json` and `data.json`;
+- the min2phase.js solver (GPL-3.0), used only to precompute two cube solutions that are now stored in `prepared.json` (see [License](#license));
 - screenshots and a delivery record tied to the original machine.
 
 Paths to the original machine were replaced on import: build scripts write to `output/`, and browser tests and the exporter load `playwright` and `marked` as ordinary packages. There is no package manifest or standalone renderer yet; adding them is the next step.
@@ -19,3 +19,9 @@ Paths to the original machine were replaced on import: build scripts write to `o
 - `artifacts/cube-permutation-study/`: a human speedsolve, a shorter computed route and a short commutator, shown as cube moves and permutations side by side.
 - `artifacts/possibility-atlas/`: permutations, combinations, repeated colours and token arrangements in one, two and three dimensions.
 - `artifacts/states-and-moves/`: States and Moves, six interactive chapters in plain language (counting, clock arithmetic, order of actions, shortest routes, things that never change, and chance) plus a connection map, five linked visual sequences and a reading companion for secondary-school readers; it imports the cube study's `vendor/cube.cjs` and `data.json`.
+
+## License
+
+Licensed under the Apache License, Version 2.0; see `LICENSE`. Third-party notices are in `NOTICE`.
+
+The cube study's two stored solver results (the 16-move route for the Du scramble and the 21-turn two-phase result for Superflip) were computed once with [min2phase.js](https://github.com/cs0x7f/min2phase.js) by Chen Shuang (GPL-3.0). That solver is not included in this repository and is not required to build or test it; the build scripts read the stored solutions from `artifacts/cube-permutation-study/prepared.json` and verify that each one solves its scramble.
