@@ -60,6 +60,10 @@ Every suite fails on any page error, prints `PASS` or `FAIL`, and writes a resul
 - `artifacts/states-and-moves/`, `artifacts/possibility-atlas/`, `artifacts/cube-permutation-study/`: one folder per lab with its model, page template, build script, tests and a README on sources, data and limits.
 - `docs/images/`: README screenshots.
 
+## Roadmap
+
+Planned labs (fractions and ratios, straight-line graphs, chance experiments, area and volume) and improvements are listed in [ROADMAP.md](ROADMAP.md).
+
 ## Project history
 
 Han developed these studies locally in October 2026 with OpenAI Codex as a coding assistant, without version control. This repository continues from that local snapshot (2026-10-28 sources), scoped down to elementary material. The first commit imports the sources as they were, except for files that could not be redistributed here: HTML exports from the original host renderer, the GPL-3.0 min2phase.js solver (see [License](#license)), and screenshots and a delivery record tied to the original machine. Later commits trimmed the labs to an elementary scope, rewrote them in plain language, and replaced the original host page with this repository's own page shell and build.
