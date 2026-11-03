@@ -18,4 +18,4 @@ Paths to the original machine were replaced on import: build scripts write to `o
 
 - `artifacts/cube-permutation-study/`: a human speedsolve, a shorter computed route and a short commutator, shown as cube moves and permutations side by side.
 - `artifacts/possibility-atlas/`: permutations, combinations, repeated colours and token arrangements in one, two and three dimensions.
-- `artifacts/mathematical-journey/`: linked visual sequences and a reading companion; it imports the cube study's `vendor/cube.cjs` and `data.json`.
+- `artifacts/mathematical-journey/`: Mathematics of Change, six interactive chapters (telling arrangements apart, repeated steps, order of moves, shortest paths, parity and a random walk) plus a connection map, five linked visual sequences and a reading companion; it imports the cube study's `vendor/cube.cjs` and `data.json`.
