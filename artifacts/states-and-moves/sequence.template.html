@@ -27,10 +27,10 @@
   </div>
   <div id="story-sequence" class="story-sequence" aria-label="Chronological sequence"></div>
   <div class="story-time">
-    <button type="button" class="btn" id="story-restart" aria-label="Restart sequence" data-tooltip="Restart sequence"><i data-lucide="rotate-ccw" aria-hidden="true"></i></button>
-    <button type="button" class="btn" id="story-back" aria-label="Previous transition" data-tooltip="Previous transition"><i data-lucide="skip-back" aria-hidden="true"></i></button>
-    <button type="button" class="btn btn-primary" id="story-play" aria-label="Play sequence" data-tooltip="Play or pause"><i data-lucide="play" aria-hidden="true"></i></button>
-    <button type="button" class="btn" id="story-forward" aria-label="Next transition" data-tooltip="Next transition"><i data-lucide="skip-forward" aria-hidden="true"></i></button>
+    <button type="button" class="btn" id="story-restart" aria-label="Restart sequence" data-tooltip="Restart sequence"><i data-icon="rotate-ccw" aria-hidden="true"></i></button>
+    <button type="button" class="btn" id="story-back" aria-label="Previous transition" data-tooltip="Previous transition"><i data-icon="skip-back" aria-hidden="true"></i></button>
+    <button type="button" class="btn btn-primary" id="story-play" aria-label="Play sequence" data-tooltip="Play or pause"><i data-icon="play" aria-hidden="true"></i></button>
+    <button type="button" class="btn" id="story-forward" aria-label="Next transition" data-tooltip="Next transition"><i data-icon="skip-forward" aria-hidden="true"></i></button>
     <label class="form-label story-scrub">Sequence position <input class="form-range" id="story-progress" type="range" min="0" max="8" step="0.01" value="0"></label>
   </div>
   <div id="story-essence" class="story-essence" aria-live="polite"></div>
@@ -67,7 +67,7 @@ const sequenceData=/* SEQUENCE DATA */;
   function token(s,x,y,id,color,r=14,display=id){const g=svg('g',{'data-token':id,class:'cursor-interaction','data-tooltip':'Track '+(state.story===2?label(id):display)});g.append(svg('circle',{cx:x,cy:y,r,fill:color,opacity:state.selected!==null&&state.selected!==id?.25:1}));if(state.selected===id)g.append(svg('circle',{cx:x,cy:y,r:r+4,fill:'none',stroke:'var(--foreground)','stroke-width':2}));if(display!==null){const t=svg('text',{x,y:y+4,'text-anchor':'middle'},display);t.style.fill=state.story===2?'#17191b':'var(--foreground)';if(state.story!==2)g.firstChild.setAttribute('opacity',state.selected!==null&&state.selected!==id?.15:.28);g.append(t);}g.onclick=()=>{state.selected=state.selected===id?null:id;render();persist();};s.append(g);}
   const mix=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t),smooth=t=>t*t*(3-2*t);
   function captions(){const c=current();$('title').textContent=c.title;$('left-title').textContent=c.left;$('right-title').textContent=c.right;}
-  function playIcon(){const b=$('play');b.setAttribute('aria-label',running?'Pause sequence':'Play sequence');b.innerHTML='<i data-lucide="'+(running?'pause':'play')+'" aria-hidden="true"></i>';window.lucide?.createIcons({attrs:{width:16,height:16}});}
+  function playIcon(){const b=$('play');b.setAttribute('aria-label',running?'Pause sequence':'Play sequence');b.innerHTML='<i data-icon="'+(running?'pause':'play')+'" aria-hidden="true"></i>';window.vizIcons?.render(b);}
   function stop(){running=false;cancelAnimationFrame(raf);playIcon();}
   function setPosition(p){state.position=Math.max(0,Math.min(length(),p));render();}
   function jump(p){stop();setPosition(p);persist();}
@@ -125,7 +125,7 @@ const sequenceData=/* SEQUENCE DATA */;
     a.forEach((v,i)=>{for(const [j,w]of [[i,alpha],[(i+5)%6,(1-alpha)/2],[(i+1)%6,(1-alpha)/2]]){const mass=v*w;if(mass<1e-8)continue;line(g.s,[x(i),y1],[x(j),y2],series(i%2),1+mass*10,{opacity:.45});const pos=mix([x(i),y1],[x(j),y2],t);g.s.append(svg('circle',{cx:pos[0],cy:pos[1],r:3+10*Math.sqrt(mass),fill:series(i%2),opacity:.65}));}});
     for(let i=0;i<6;i++){txt(g.s,x(i),43,i);txt(g.s,x(i),263,i);}txt(g.s,g.W/2,18,'Before step '+(k+1));txt(g.s,g.W/2,292,'After step '+(k+1));$('selection').textContent='Total probability '+p.reduce((a,b)=>a+b,0).toFixed(3)+' · moving dots represent shares of probability, not sampled individuals.';
   }
-  async function setup3D(){if(view3d||threePromise)return;threePromise=(async()=>{try{THREE=await import('https://esm.sh/three@0.160.1');({OrbitControls}=await import('https://esm.sh/three@0.160.1/examples/jsm/controls/OrbitControls.js'));const host=node('div',{class:'story-scene'}),renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));host.append(renderer.domElement);
+  async function setup3D(){if(view3d||threePromise)return;threePromise=(async()=>{try{THREE=await import('three');({OrbitControls}=await import('three/addons/controls/OrbitControls.js'));const host=node('div',{class:'story-scene'}),renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));host.append(renderer.domElement);
       const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(35,1,.1,100);camera.position.set(6,5,7);camera.lookAt(0,0,0);const controls=new OrbitControls(camera,renderer.domElement);controls.enablePan=false;controls.minDistance=5;controls.maxDistance=14;
       const groups=[],tiles=[],box=new THREE.BoxGeometry(.97,.97,.97),plane=new THREE.PlaneGeometry(.84,.84),plastic=new THREE.MeshBasicMaterial({color:'#202326'});
       for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){if(!x&&!y&&!z)continue;const g=new THREE.Group();g.userData.base=new THREE.Vector3(x,y,z);g.position.copy(g.userData.base);g.add(new THREE.Mesh(box,plastic));scene.add(g);groups.push(g);}
@@ -133,7 +133,7 @@ const sequenceData=/* SEQUENCE DATA */;
       view3d={host,renderer,scene,camera,controls,groups,tiles};controls.addEventListener('change',()=>{if(state.story===2&&visible)renderer.render(scene,camera);});new ResizeObserver(()=>{if(!host.clientWidth)return;renderer.setSize(host.clientWidth,host.clientHeight,false);camera.aspect=host.clientWidth/host.clientHeight;camera.updateProjectionMatrix();if(state.story===2&&visible)render();}).observe(host);
       const ray=new THREE.Raycaster();let down;renderer.domElement.addEventListener('pointerdown',e=>down=[e.clientX,e.clientY]);renderer.domElement.addEventListener('pointerup',e=>{if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>6)return;const rect=host.getBoundingClientRect();ray.setFromCamera(new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,1-(e.clientY-rect.top)/rect.height*2),camera);scene.updateMatrixWorld(true);const hit=ray.intersectObjects(tiles)[0];if(hit){const seg=S.segment(state.position,length());state.selected=data().states[seg.index][hit.object.userData.slot];render();persist();}});
       renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();stop();view3d=null;$('error').hidden=false;$('error').textContent='3D context lost. Endpoint net and cycle playback remain available.';render();});if(state.story===2)render();
-    }catch(e){$('error').textContent='3D needs a network connection and WebGL. The unfolded cube shows endpoints; cycle playback remains available.';if(state.story===2)render();}})();}
+    }catch(e){$('error').textContent='3D needs WebGL and could not start here. The unfolded cube shows endpoints; cycle playback remains available.';if(state.story===2)render();}})();}
   function draw3D(k,t){const v=view3d,d=data(),a=d.states[k],move=d.labels[k],[axis,side,sign]=S.turns[move[0]],amount=move.includes("'")?-1:1,av=new THREE.Vector3(...[0,1,2].map(i=>i===axis?1:0));
     v.tiles.forEach((m,i)=>{const id=a[i];m.material.color.set(colors[Math.floor(id/9)]);if(state.selected!==null&&state.selected!==id)m.material.color.multiplyScalar(.3);});v.groups.forEach(g=>{g.position.copy(g.userData.base);g.quaternion.identity();if(g.userData.base.getComponent(axis)===side){g.quaternion.setFromAxisAngle(av,sign*amount*Math.PI/2*t);g.position.applyQuaternion(g.quaternion);}});v.renderer.render(v.scene,v.camera);
   }

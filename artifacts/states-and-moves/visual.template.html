@@ -52,9 +52,10 @@
   function normalize(raw){const x={...defaults};if(!raw||typeof raw!=='object')return x;for(const key of ['merge','all'])if(typeof raw[key]==='boolean')x[key]=raw[key];const limits={chapter:[0,last,1],n:[3,12,1],k:[0,11,1],tick:[0,36,1],start:[0,5,1],alpha:[0,0.5,0],time:[0,40,1]};for(const [key,[lo,hi,int]]of Object.entries(limits))if(Number.isFinite(raw[key]))x[key]=Math.max(lo,Math.min(hi,int?Math.round(raw[key]):raw[key]));x.k=Math.min(x.k,x.n-1);if(Array.isArray(raw.word)&&raw.word.every(v=>v==='r'||v==='s'))x.word=raw.word.slice(0,36);if(Array.isArray(raw.board)&&raw.board.length===9&&[...raw.board].sort().join('')==='012345678')x.board=raw.board.slice();return x;}
   const baseNormalize=normalize;
   function normalizePresentation(raw){const s=baseNormalize(raw);s.presentation=raw?.presentation==='lab'?'lab':'sequence';s.studio=raw?.studio&&typeof raw.studio==='object'?raw.studio:null;return s;}
-  let state=normalizePresentation(window.openai?.widgetState?.privateContent?.journey);
-  function save(){const snapshot={...state,word:state.word.slice(),board:state.board.slice()};window.openai?.setWidgetState?.({modelContent:{chapter:names[state.chapter],parameters:snapshot},privateContent:{journey:snapshot}})?.catch(()=>{});}
-  window.addEventListener('openai:set_globals',e=>{const raw=e.detail?.globals?.widgetState?.privateContent?.journey;if(raw){const next=normalizePresentation({presentation:state.presentation,...raw});if(JSON.stringify(next)!==JSON.stringify(state)){state=next;window.SequenceStudio?.restore(state.studio);view();}}});
+  const STORE_KEY='visual-intuitions:states-and-moves';
+  let state=normalizePresentation(window.localState?.read(STORE_KEY));
+  function save(){const snapshot={...state,word:state.word.slice(),board:state.board.slice()};window.localState?.write(STORE_KEY,snapshot);}
+  window.localState?.watch(STORE_KEY,raw=>{if(raw&&typeof raw==='object'){const next=normalizePresentation({presentation:state.presentation,...raw});if(JSON.stringify(next)!==JSON.stringify(state)){state=next;window.SequenceStudio?.restore(state.studio);view();}}});
   window.addEventListener('message',e=>{if(e.data?.type==='journeyChapter'&&Number.isInteger(e.data.chapter)&&e.data.chapter>=0&&e.data.chapter<=last){go(e.data.chapter);}});
   const fmt=x=>Math.abs(x)>1000?x.toExponential(2):Number(x.toFixed(3)).toString();
   function el(tag,attrs={},text=''){const e=document.createElement(tag);for(const [k,v]of Object.entries(attrs))e.setAttribute(k,v);if(text)e.textContent=text;return e;}

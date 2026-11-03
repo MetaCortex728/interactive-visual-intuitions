@@ -42,7 +42,7 @@ const {pathToFileURL}=require('url'),assert=require('assert/strict'),fs=require(
  await f.locator('#pa-proof-next').scrollIntoViewIfNeeded();await page.screenshot({path:__dirname+'/mobile-derivation.png'});assert(await f.locator('#pa-formula').isVisible());
  await page.setViewportSize({width:320,height:1100});
  for(const [tab,changes] of [[0,{n:6,rank:719,source:'generic'}],[1,{n:8,k:8,subset:[0,1,2,3,4,5,6,7]}],[2,{multi:[3,3,3]}],[3,{stars:[5,5,5]}],[4,{depth:7,word:[1,0,1,0,1,0,1]}],[6,{dim:3,lineNine:false}]]){
-  await f.evaluate(({tab,changes})=>window.dispatchEvent(new CustomEvent('openai:set_globals',{detail:{globals:{widgetState:{privateContent:{...window.__possibilityAtlas.getState(),...changes,kind:'possibility-atlas-v1',tab}}}}})),{tab,changes});
+  await f.evaluate(({tab,changes})=>window.dispatchEvent(new StorageEvent('storage',{key:'visual-intuitions:possibility-atlas',newValue:JSON.stringify({...window.__possibilityAtlas.getState(),...changes,kind:'possibility-atlas-v1',tab})})),{tab,changes});
   await page.waitForTimeout(120);const bad=await f.evaluate(()=>[...document.querySelectorAll('#possibility-atlas svg text')].filter(t=>{const a=t.getBBox(),s=t.ownerSVGElement.viewBox.baseVal;return a.x<-.5||a.x+a.width>s.width+.5||a.y<-.5||a.y+a.height>s.height+.5;}).map(t=>t.textContent));if(bad.length)layout.push({tab,width:320,extreme:true,bad});
  }
  assert.deepEqual(errors,[]);fs.writeFileSync(__dirname+'/browser-check.json',JSON.stringify({errors,layout},null,2));console.log(JSON.stringify({errors,layout}));await browser.close();assert.deepEqual(layout,[]);

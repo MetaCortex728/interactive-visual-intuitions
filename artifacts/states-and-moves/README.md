@@ -4,7 +4,7 @@ Built 2026-10-28 to explore elementary mathematics around the cube, step by step
 
 ## Open
 
-- [Complete interactive document](states-and-moves.html): sequence-first explorer plus synchronized reading companion, native MathML equations, and a complete-reading option. The cube's 3D rendering needs the pinned Three.js CDN and WebGL; its endpoint net and all other experiments work offline.
+- `dist/states-and-moves.html` (after `npm ci` and `npm run build` in the repository root): sequence-first explorer plus synchronized reading companion, native MathML equations, and a complete-reading option. Everything works offline, opened directly from disk. The cube's 3D rendering uses the vendored Three.js in `dist/vendor/three/` and needs WebGL; without WebGL it is shown as an endpoint net.
 - [Reading source](GUIDE.md): approximately 3,800 words including derivations, reflection prompts and further branches.
 
 The existing cube and possibility-atlas outputs are unchanged. Their specialized experiments are linked as companion labs, not silently reimplemented or mislabelled as new findings.
@@ -39,9 +39,9 @@ The full seven-view explorer and reading are retained under **Explore all fields
 
 `test-sequences.cjs` passes **904 checks** for source/destination maps, inverse replay, cycle endpoints, exact cube geometry and model agreement.
 
-`test-browser.cjs` and `test-sequence-browser.cjs` have been updated for the seven views, five stories and the renamed controls and readouts but have not been run since the trim: the repository has no package manifest yet, so Playwright is not available. Before the trim, both suites passed in headless Edge at 1100, 736, 390 and 320 pixels for the earlier thirteen views and eight stories; `browser-check.json` and `sequence-browser-check.json` are the records of that earlier run and will be overwritten by the next one. The explorer suite covers every navigation view, representative native controls, parameter extremes, saved-state events, reading-panel synchronization, math/paragraph preservation, light/dark appearance and blocked-network operation. The sequence suite covers all stories, actual Three.js mesh endpoints for all 54 stickers, nonblank/changing canvas pixels, playback/step/scrub/selection, state restoration, reduced motion and the offline net fallback.
+`test-browser.cjs` and `test-sequence-browser.cjs` have been updated for the seven views, five stories and the renamed controls and readouts but have not been run since the trim; they still target the earlier host-rendered export and are being moved to `dist/`. Before the trim, both suites passed in headless Edge at 1100, 736, 390 and 320 pixels for the earlier thirteen views and eight stories; `browser-check.json` and `sequence-browser-check.json` are the records of that earlier run and will be overwritten by the next one. The explorer suite covers every navigation view, representative native controls, parameter extremes, saved-state events, reading-panel synchronization, math/paragraph preservation, light/dark appearance and blocked-network operation. The sequence suite covers all stories, actual Three.js mesh endpoints for all 54 stickers, nonblank/changing canvas pixels, playback/step/scrub/selection, state restoration, reduced motion and the offline net fallback.
 
-The explorer suite blocks HTTP(S) requests. The sequence suite checks online 3D and a separately network-blocked fallback. There is no server, API call or remote model dependency in the mathematical computations. Three.js and its orbit control are pinned to 0.160.1 and loaded from the same allowed CDN as the earlier cube study. Browser/module availability can change presentation: an offline net is explicitly not identical to 3D.
+The explorer suite blocks HTTP(S) requests. The sequence suite checks 3D and a separate fallback when Three.js cannot load. There is no server, API call or remote model dependency in the mathematical computations. Three.js and its orbit control are pinned to 0.160.1 and vendored by the build, as for the cube study. WebGL availability can change presentation: the fallback net is explicitly not identical to 3D.
 
 
 ## Files and Reproduction
@@ -51,23 +51,21 @@ The explorer suite blocks HTTP(S) requests. The sequence suite checks online 3D 
 - `visual.template.html`: interactive fragment source.
 - `sequence.template.html`, `sequence-model.cjs`, `sequence-data.cjs`: linked visual sequences, shared geometry and traces generated from the existing cube.js engine.
 - `build.cjs`: generates the fragment in `output/` (creating it if missing) and regenerates `GUIDE.md`.
-- `export.cjs`: adds the synchronized reading companion to the standard standalone wrapper.
+- `companion.cjs`: the synchronized reading companion; `npm run build` adds it below the explorer in `dist/states-and-moves.html`.
 - `test.cjs`, `test-sequences.cjs`, `test-browser.cjs`, `test-sequence-browser.cjs`: verification; `browser-check.json` and `sequence-browser-check.json` record browser runs.
 
 Run these separately from the workspace root:
 
-```powershell
-node artifacts/states-and-moves/build.cjs
-(Rendered with the Codex visualization renderer, which is not part of this repository.)
-node artifacts/states-and-moves/export.cjs
+```sh
+npm run build
 node artifacts/states-and-moves/test.cjs
 node artifacts/states-and-moves/test-browser.cjs
 node artifacts/states-and-moves/test-sequences.cjs
 node artifacts/states-and-moves/test-sequence-browser.cjs
 ```
 
-The exporter uses the configured local `marked` package; browser tests use the bundled Playwright package and Edge. No installation was performed. The final document has no build-time dependency at viewing time.
+`npm run build` runs `build.cjs` and uses `marked` to render the preface and afterword for the reading companion. Browser tests use Playwright. The built page needs nothing from the network at viewing time.
 
 ## Deliberate Boundaries
 
-This is a substantive connected learning path, not an exhaustive encyclopedia, theorem prover or arbitrary-cube optimal solver. Every experiment names its state space and rules. Results on fixed-size examples say nothing about how hard larger versions of a puzzle are. Native HTML state persistence depends on the viewing surface; cross-device synchronization is not promised.
+This is a substantive connected learning path, not an exhaustive encyclopedia, theorem prover or arbitrary-cube optimal solver. Every experiment names its state space and rules. Results on fixed-size examples say nothing about how hard larger versions of a puzzle are. Saved state is kept in this browser's local storage only; cross-device synchronization is not promised.

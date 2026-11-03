@@ -3,11 +3,11 @@
   <div class="viz-controls" id="case-controls" aria-label="Comparison cases"></div>
   <div class="cs-heading"><span id="case-title"></span><a id="source-link" target="_blank" rel="noreferrer">Source</a></div>
   <div class="viz-controls">
-    <button class="btn" id="begin" aria-label="Return to scramble" data-tooltip="Return to scramble"><i data-lucide="rotate-ccw"></i></button>
-    <button class="btn" id="back" aria-label="Previous move" data-tooltip="Previous move"><i data-lucide="skip-back"></i></button>
+    <button class="btn" id="begin" aria-label="Return to scramble" data-tooltip="Return to scramble"><i data-icon="rotate-ccw"></i></button>
+    <button class="btn" id="back" aria-label="Previous move" data-tooltip="Previous move"><i data-icon="skip-back"></i></button>
     <button class="btn btn-primary" id="play">Play</button>
-    <button class="btn" id="next" aria-label="Next move" data-tooltip="Next move"><i data-lucide="skip-forward"></i></button>
-    <button class="btn" id="end" aria-label="Go to solved" data-tooltip="Go to solved"><i data-lucide="flag"></i></button>
+    <button class="btn" id="next" aria-label="Next move" data-tooltip="Next move"><i data-icon="skip-forward"></i></button>
+    <button class="btn" id="end" aria-label="Go to solved" data-tooltip="Go to solved"><i data-icon="flag"></i></button>
     <label class="form-label">Pacing <select class="form-select" id="speed"><option value="1000">Slow</option><option value="600" selected>Study</option><option value="250">Quick</option></select></label>
     <label class="form-label">Alignment <select class="form-select" id="align"><option value="moves">Same move count</option><option value="progress">Same progress</option></select></label>
   </div>
@@ -65,11 +65,12 @@ const lanes=()=>[active().left,active().right];
 const maximum=()=>Math.max(...lanes().map(l=>l.moves.length));
 const indexFor=(i,s=step)=>align==='progress'?Math.round(s/maximum()*lanes()[i].moves.length):Math.min(s,lanes()[i].moves.length);
 const theme=n=>getComputedStyle(root).getPropertyValue(n).trim();
+const STORE_KEY='visual-intuitions:cube-permutation-study';
 let lastSaved='';
-const save=()=>{const privateContent={caseIndex,step,lens,selected,align,duration};lastSaved=JSON.stringify(privateContent);window.openai?.setWidgetState?.({modelContent:{case:active().id,step,lens,selected: selected?.name??null},privateContent})?.catch(()=>{});};
+const save=()=>{const saved={caseIndex,step,lens,selected,align,duration};lastSaved=JSON.stringify(saved);window.localState?.write(STORE_KEY,saved);};
 function restore(v){if(!v)return;caseIndex=Number.isInteger(v.caseIndex)&&v.caseIndex>=0&&v.caseIndex<DATA.cases.length?v.caseIndex:0;step=Math.max(0,Math.min(Number(v.step)||0,maximum()));lens=v.lens==='turn'?'turn':'state';align=v.align==='progress'?'progress':'moves';duration=[250,600,1000].includes(v.duration)?v.duration:600;selected=pieces.find(p=>p.name===v.selected?.name)||null;}
-restore(window.openai?.widgetState?.privateContent);
-window.addEventListener('openai:set_globals',e=>{const v=e.detail?.globals?.widgetState?.privateContent;if(!v||JSON.stringify(v)===lastSaved)return;stop();restore(v);rebuild();});
+restore(window.localState?.read(STORE_KEY));
+window.localState?.watch(STORE_KEY,v=>{if(!v||JSON.stringify(v)===lastSaved)return;stop();restore(v);rebuild();});
 function button(text,fn){const b=document.createElement('button');b.type='button';b.className='btn';b.textContent=text;b.onclick=fn;return b;}
 function stop(){playing=false;anim=null;$('#play').textContent='Play';}
 function jump(s){stop();step=Math.max(0,Math.min(s,maximum()));update();save();}
@@ -157,8 +158,8 @@ function frame(now){
 }
 rebuild();
 try{
- THREE=await import('https://esm.sh/three@0.160.1');
- ({OrbitControls}=await import('https://esm.sh/three@0.160.1/examples/jsm/controls/OrbitControls.js'));
+ THREE=await import('three');
+ ({OrbitControls}=await import('three/addons/controls/OrbitControls.js'));
  laneElements.forEach(el=>el.querySelector('.cs-scene').replaceChildren());views=laneElements.map((el,i)=>initView(el.querySelector('.cs-scene'),i));webgl=true;update();
 }catch(e){webgl=false;update();$('#error').hidden=false;$('#error').textContent='3D unavailable; verified sticker nets and permutation maps remain interactive.';}
 new ResizeObserver(()=>lanes().forEach((_,i)=>drawGraph(i))).observe(root);

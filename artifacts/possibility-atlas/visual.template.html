@@ -184,10 +184,11 @@
   function render(controls=true){
     if(controls)$('controls').replaceChildren();$('actions').replaceChildren();
     $('nav').replaceChildren(...tabs.map((name,i)=>button(name,()=>{state.tab=i;state.proof=0;render();save();},i===state.tab)));
-    views[state.tab](controls);if(window.lucide)window.lucide.createIcons();
+    views[state.tab](controls);window.vizIcons?.render(root);
   }
-  function save(){const s={kind:'possibility-atlas-v1',...state};lastKey=JSON.stringify(s);window.openai?.setWidgetState?.({modelContent:{kind:s.kind,view:tabs[state.tab],n:state.n,k:state.k},privateContent:s})?.catch(()=>{});}
-  function restore(raw){const s=raw?.privateContent;if(s?.kind!=='possibility-atlas-v1'||JSON.stringify(s)===lastKey)return;state={...structuredClone(defaults),...s};
+  const STORE_KEY='visual-intuitions:possibility-atlas';
+  function save(){const s={kind:'possibility-atlas-v1',...state};lastKey=JSON.stringify(s);window.localState?.write(STORE_KEY,s);}
+  function restore(s){if(s?.kind!=='possibility-atlas-v1'||JSON.stringify(s)===lastKey)return;state={...structuredClone(defaults),...s};
     const clamp=(k,lo,hi)=>state[k]=Math.max(lo,Math.min(hi,Math.trunc(Number(state[k]))||0));
     for(const [k,lo,hi] of [['tab',0,6],['proof',0,3],['n',3,8],['k',0,8],['rank',0,40319],['progress',0,100],['preset',0,2],['depth',0,7],['twist',0,2],['flip',0,1],['cp',0,1],['ep',0,1],['dim',1,3],['selected',-1,26],['multiRank',0,1680],['exampleSeed',0,2147483647]])clamp(k,lo,hi);
     const arr=(k,max,cap,len)=>{state[k]=Array.isArray(state[k])?state[k].slice(0,cap).map(x=>Math.max(0,Math.min(max,Math.trunc(Number(x))||0))):structuredClone(defaults[k]);if(len&&state[k].length!==len)state[k]=structuredClone(defaults[k]);};
@@ -196,8 +197,8 @@
     if(!['generic','corners','edges'].includes(state.source))state.source='generic';if(!['cycles','matrix'].includes(state.lens))state.lens='cycles';render();
   }
   $('proof-back').onclick=()=>{state.proof=Math.max(0,state.proof-1);render(false);save();};$('proof-next').onclick=()=>{state.proof=Math.min(steps.length-1,state.proof+1);render(false);save();};
-  render();restore(window.openai?.widgetState);
-  window.addEventListener('openai:set_globals',e=>restore(e.detail?.globals?.widgetState));
+  render();restore(window.localState?.read(STORE_KEY));
+  window.localState?.watch(STORE_KEY,restore);
   let resize;new ResizeObserver(()=>{clearTimeout(resize);resize=setTimeout(()=>render(false),80);}).observe(root);
   window.__possibilityAtlas={getState:()=>structuredClone(state),select:i=>{state.tab=i;state.proof=0;render();},model:M,validate:()=>({cube:M.cubeCount().toString(),word:M.trace(state.word).at(-1),dimensions:[$('a').clientWidth,$('b').clientWidth]})};
 })();

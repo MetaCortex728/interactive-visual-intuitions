@@ -4,9 +4,7 @@ Built and checked 2026-10-28 for a linked interactive comparison of shortest-mov
 
 ## Entry point and sources
 
-The original entry point was a fragment rendered by the Codex visualization tool.
-`visual.template.html` is the maintained source; `assemble.cjs` injects verified traces.
-`preview.html` is the generated browser-test wrapper, not a separately published service.
+`visual.template.html` is the maintained source; `assemble.cjs` injects verified traces and writes the fragment to `output/cube-paths-and-permutations.html`. `npm run build` (from the repository root) wraps it in the shared page shell as `dist/cube-permutation-study.html`, which opens directly from disk. Three.js 0.160.1 and its OrbitControls are vendored into `dist/vendor/three/` by the build; the page loads them through an import map and makes no network requests.
 
 - [Du reconstruction, credited to Yusheng Du](https://reco.nz/solve/3455): scramble, inspection orientation, executed moves and stage boundaries. The page's 2019 date is not presented as the competition date.
 - [WCA Wuhu Open 2018](https://www.worldcubeassociation.org/competitions/WuhuOpen2018/results/all?event=333): confirms the 3.47-second single world record at that competition. This is a historical record, not a claim about the current record.
@@ -27,10 +25,10 @@ This is a validated explorer of these cases, not an arbitrary-scramble optimal s
 
 - `node build-data.cjs`: all six paths solve; 118 immutable snapshots; every snapshot's 54 sticker identities match its cubie state; both lanes share the same initial state; adjacent snapshots match the move engine; inverse and four-quarter-turn identities pass.
 - `node test-geometry.cjs`: all 18 rendered move endpoints match all 54 sticker identities independently using 3D coordinate rotations. The human stage boundaries have a complete cross and 1, 2, 3, 4, 4, 4 completed F2L pairs respectively.
-- `node test-browser.cjs`: Playwright/Edge, desktop and mobile. Nonblank canvas pixels, changing playback pixels, all six solved endpoints, graph clicking and native piece selection, same-progress alignment, saved-state restoration, reduced-motion stepping, no horizontal overflow at 320px inner width, blocked-CDN sticker-net fallback; no page errors. Desktop and mobile screenshots inspected.
-- Two defects found and fixed before delivery: mutable `toJSON()` array references corrupted historical permutation snapshots; host saved-state echoes stopped animation. Tests cover both behaviors.
+- `node test-browser.cjs`: Playwright/Edge, desktop and mobile. Nonblank canvas pixels, changing playback pixels, all six solved endpoints, graph clicking and native piece selection, same-progress alignment, saved-state restoration, reduced-motion stepping, no horizontal overflow at 320px inner width, sticker-net fallback when Three.js cannot load; no page errors. Desktop and mobile screenshots were inspected at the time. The suite still targets the earlier host-rendered preview and is being moved to `dist/`.
+- Two defects found and fixed before delivery: mutable `toJSON()` array references corrupted historical permutation snapshots; saved-state echoes stopped animation. Tests cover both behaviors.
 
-Rebuild: run `prepare.cjs` (verifies the stored solutions), `build-data.cjs`, then `assemble.cjs`; regenerate `preview.html` with the bundled visualize `render.py --force` before browser testing. The tests use the bundled Playwright package and installed Edge; a sandbox permitting browser startup/network library loads is needed. The visualization itself makes no application API requests, and uses version-pinned Three.js modules from esm.sh.
+Rebuild: `prepare.cjs` (verifies the stored solutions) and `build-data.cjs` regenerate `prepared.json` and `data.json`; then run `npm run build` from the repository root, which runs `assemble.cjs` and writes the standalone page to `dist/`. Saved positions are kept in the browser's local storage. The page makes no network requests at view time.
 
 User acceptance and measured learning benefits remain untested. No changes to installed skills, personal instructions, other applications or previous visualizations were made.
 
