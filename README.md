@@ -2,6 +2,12 @@
 
 Interactive browser labs that build intuition for elementary mathematics: counting and arrangements, the order of actions, routes between states, and chance. They are made for curious secondary-school learners and their teachers: every idea is something you can change and watch, with a plain-language explanation beside it. The pages run offline in any modern browser, straight from disk.
 
+## Intended use
+
+- **Learners** open a lab, change the inputs and watch what happens, with the reasoning written beside each view.
+- **Teachers** use a lab in class or set it as homework; everything runs offline from a folder, with no accounts, tracking or network access.
+- **Developers** can reuse the patterns: exact models with unit tests behind every visual, and browser tests for the interactions.
+
 ## The labs
 
 ### States and Moves
@@ -64,9 +70,17 @@ Every suite fails on any page error, prints `PASS` or `FAIL`, and writes a resul
 
 Planned labs (fractions and ratios, straight-line graphs, chance experiments, area and volume) and improvements are listed in [ROADMAP.md](ROADMAP.md).
 
+## Status
+
+Three labs are complete and tested in CI on every push. Planned work is in [ROADMAP.md](ROADMAP.md).
+
+## Ownership and contributors
+
+This is an independent personal project by Han ([MetaCortex728](https://github.com/MetaCortex728)). It is not owned by, or developed for, any employer, client, university or other organization, and no one else currently works on the repository.
+
 ## Project history
 
-Han developed these studies locally in October 2026 with OpenAI Codex as a coding assistant, without version control. This repository continues from that local snapshot (2026-10-28 sources), scoped down to elementary material. The first commit imports the sources as they were, except for files that could not be redistributed here: HTML exports from the original host renderer, the GPL-3.0 min2phase.js solver (see [License](#license)), and screenshots and a delivery record tied to the original machine. Later commits trimmed the labs to an elementary scope, rewrote them in plain language, and replaced the original host page with this repository's own page shell and build.
+Han developed these studies locally in October 2026 with OpenAI Codex as a coding assistant, without version control. This repository continues from that local snapshot (2026-10-28 sources), scoped down to elementary material. The first commit imports the sources as they were, except for files that could not be redistributed here: HTML exports from the original host renderer, the GPL-3.0 min2phase.js solver (see [License](#license)), and screenshots and a delivery record tied to the original machine. Later commits trimmed the labs to an elementary scope, rewrote them in plain language, and replaced the original host page with this repository's own page shell and build. Work in this repository, from November 2026, was planned and reviewed by Han with Anthropic's Claude as a coding assistant.
 
 ## License
 
