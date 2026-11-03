@@ -1,5 +1,5 @@
 const fs=require('fs'), assert=require('assert/strict');
-const Cube=require('./vendor/cube.cjs'), solver=require('./vendor/min2phase.cjs');
+const Cube=require('./vendor/cube.cjs');
 const record=require('./prepared.json');
 const CF=[[8,9,20],[6,18,38],[0,36,47],[2,45,11],[29,26,15],[27,44,24],[33,53,42],[35,17,51]];
 const EF=[[5,10],[7,19],[3,37],[1,46],[32,16],[28,25],[30,43],[34,52],[23,12],[21,41],[50,39],[48,14]];
@@ -25,8 +25,11 @@ let frontier=[new Cube()], seen=new Set([new Cube().asString()]), layers=[1];
 for(let d=1;d<=3;d++){const next=[];for(const c of frontier)for(const m of moves){const n=new Cube(c).move(m),s=n.asString();if(!seen.has(s)){seen.add(s);next.push(n);}}frontier=next;layers.push(next.length);}
 assert(!seen.has(initialShort.asString()));
 const superAlg="R L U2 F U' D F2 R2 B2 L U2 F' B' U R2 D F2 U R2 U";
+assert.equal(record.superflip.scramble,superAlg);
 const superState=new Cube().move(superAlg);assert(superState.co.every(v=>v===0));assert(superState.eo.every(v=>v===1));assert(superState.cp.every((v,i)=>v===i));assert(superState.ep.every((v,i)=>v===i));
-solver.initFull();const heuristic=solver.solve(superState.asString()).trim();
+// Two-phase result computed once and stored in prepared.json (see README).
+const heuristic=record.superflip.twoPhase;assert(new Cube(superState).move(heuristic).isSolved());
+assert(new Cube().move(record.scramble).move(record.solution).isSolved());
 const cases=[
  {id:'record',label:'Du 3.47 s',title:'Former world record · Wuhu 2018',scramble:record.scramble,inspection:record.inspection,colors:oriented.center,
   note:'Same scramble. 16 is a verified upper bound, not a proof of optimality. Equal move pacing is not the original timing.',

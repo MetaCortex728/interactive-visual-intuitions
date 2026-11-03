@@ -1,0 +1,15 @@
+Interactive Visual Intuitions
+Copyright 2026 MetaCortex728
+
+This product includes third-party software:
+
+- cubejs (https://github.com/ldez/cubejs), version 1.3.2
+  Licensed under the MIT License.
+  See artifacts/cube-permutation-study/vendor/CUBEJS-LICENSE.
+
+- three.js (https://threejs.org/), version 0.160.1, including the
+  OrbitControls add-on (examples/jsm/controls/OrbitControls.js)
+  Copyright © 2010-2023 three.js authors
+  Licensed under the MIT License.
+  Installed from npm as a dependency and copied by `npm run build` into
+  dist/vendor/three/ together with its LICENSE file.

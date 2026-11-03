@@ -1,0 +1,112 @@
+<style>
+#math-journey { color:var(--foreground); }
+#math-journey .journey-nav {display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:6px;margin-block:16px;}
+#math-journey .chapter-head {display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;justify-content:space-between;padding-right:92px;}
+#math-journey .panes {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:16px;}
+#math-journey .diagram {display:block;width:100%;overflow:visible;}
+#math-journey .diagram text {fill:var(--foreground);font-size:12px;}
+#math-journey .diagram .structure {stroke:var(--border);fill:none;stroke-width:1.5;}
+#math-journey .diagram .active-path {stroke:var(--viz-series-1);fill:none;stroke-width:3;}
+#math-journey .tile-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-width:370px;margin:20px auto;}
+#math-journey .tile-grid .tile-label {display:block;padding-block:14px;}
+#math-journey .token {display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;color:var(--foreground);margin:3px;background:color-mix(in srgb,var(--token-color) 22%,transparent);}
+#math-journey .arrangements {display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-block:24px;}
+#math-journey .orbit-group {padding-block:8px;border-bottom:1px solid var(--border);}
+#math-journey .readout {display:flex;flex-wrap:wrap;gap:10px 24px;margin-block:12px;}
+#math-journey .legend {display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;}
+#math-journey .key {display:inline-block;width:18px;height:4px;vertical-align:middle;margin-right:6px;background:var(--key-color);}
+#math-journey .connection-list {display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;}
+#math-journey .route-link {display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-block:10px;}
+#math-journey .source-map {display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-block:12px;}
+#math-journey .chapter-foot {display:flex;justify-content:space-between;gap:12px;margin-top:20px;}
+#math-journey .form-label {min-width:0;}
+#math-journey output {font-variant-numeric:tabular-nums;}
+@media(max-width:440px){#math-journey .chapter-head {padding-right:0;}#math-journey .journey-nav {grid-template-columns:repeat(2,minmax(0,1fr));}}
+</style>
+<div id="math-journey">
+  <div class="chapter-head"><h2>States and Moves</h2><span id="journey-count" class="text-small"></span></div>
+  <div class="viz-row" aria-label="Presentation"><button class="btn" id="journey-sequences" type="button" aria-pressed="true">Visual sequences</button><button class="btn" id="journey-fields" type="button" aria-pressed="false">Explore all fields</button></div>
+  <div id="journey-sequence-host"><!-- SEQUENCE MARKUP --></div>
+  <div id="journey-lab-surface" hidden>
+  <nav class="journey-nav" aria-label="Progressive mathematical journey" id="journey-nav"></nav>
+  <section aria-labelledby="journey-title">
+    <span id="journey-field" class="text-small text-muted"></span>
+    <h3 id="journey-title"></h3>
+    <div id="journey-controls" class="viz-controls"></div>
+    <div id="journey-visual"></div>
+    <div id="journey-legend" class="legend"></div>
+    <div id="journey-readout" class="readout tabular-nums" aria-live="polite"></div>
+    <div id="journey-detail" class="text-small"></div>
+    <div class="chapter-foot"><button class="btn" type="button" id="journey-prev">Previous</button><button class="btn btn-primary" type="button" id="journey-next">Next</button></div>
+  </section>
+  </div>
+</div>
+<script>
+/* MODEL */
+/* CHAPTERS */
+(function(){
+  const root=document.getElementById('math-journey'),M=window.Journey;
+  const $=id=>root.querySelector('#journey-'+id),C=i=>'var(--viz-series-'+(i%6+1)+')';
+  const names=['Distinguish','Repeat','Compose','Find paths','Invariants','Random walks','Connect'],last=names.length-1;
+  const defaults={chapter:0,merge:false,n:12,k:4,tick:0,word:[],all:false,start:5,board:[1,2,3,4,5,6,7,8,0],alpha:0,time:6};
+  function normalize(raw){const x={...defaults};if(!raw||typeof raw!=='object')return x;for(const key of ['merge','all'])if(typeof raw[key]==='boolean')x[key]=raw[key];const limits={chapter:[0,last,1],n:[3,12,1],k:[0,11,1],tick:[0,36,1],start:[0,5,1],alpha:[0,0.5,0],time:[0,40,1]};for(const [key,[lo,hi,int]]of Object.entries(limits))if(Number.isFinite(raw[key]))x[key]=Math.max(lo,Math.min(hi,int?Math.round(raw[key]):raw[key]));x.k=Math.min(x.k,x.n-1);if(Array.isArray(raw.word)&&raw.word.every(v=>v==='r'||v==='s'))x.word=raw.word.slice(0,36);if(Array.isArray(raw.board)&&raw.board.length===9&&[...raw.board].sort().join('')==='012345678')x.board=raw.board.slice();return x;}
+  const baseNormalize=normalize;
+  function normalizePresentation(raw){const s=baseNormalize(raw);s.presentation=raw?.presentation==='lab'?'lab':'sequence';s.studio=raw?.studio&&typeof raw.studio==='object'?raw.studio:null;return s;}
+  const STORE_KEY='visual-intuitions:states-and-moves';
+  let state=normalizePresentation(window.localState?.read(STORE_KEY));
+  function save(){const snapshot={...state,word:state.word.slice(),board:state.board.slice()};window.localState?.write(STORE_KEY,snapshot);}
+  window.localState?.watch(STORE_KEY,raw=>{if(raw&&typeof raw==='object'){const next=normalizePresentation({presentation:state.presentation,...raw});if(JSON.stringify(next)!==JSON.stringify(state)){state=next;window.SequenceStudio?.restore(state.studio);view();}}});
+  window.addEventListener('message',e=>{if(e.data?.type==='journeyChapter'&&Number.isInteger(e.data.chapter)&&e.data.chapter>=0&&e.data.chapter<=last){go(e.data.chapter);}});
+  const fmt=x=>Math.abs(x)>1000?x.toExponential(2):Number(x.toFixed(3)).toString();
+  function el(tag,attrs={},text=''){const e=document.createElement(tag);for(const [k,v]of Object.entries(attrs))e.setAttribute(k,v);if(text)e.textContent=text;return e;}
+  function button(label,fn,selected=false){const b=el('button',{type:'button',class:'btn','aria-pressed':String(selected)},label);b.addEventListener('click',()=>{fn();save();});return b;}
+  function range(key,label,min,max,step=1){const wrap=el('label',{class:'form-label'}),span=el('span'),out=el('output',{'data-value':key},fmt(state[key])),input=el('input',{type:'range',class:'form-range',min,max,step,value:state[key],'aria-label':label});span.append(label+' ',out);wrap.append(span,input);input.addEventListener('input',()=>{state[key]=Number(input.value);out.textContent=fmt(state[key]);if(key==='n'){state.k=Math.min(state.k,state.n-1);const k=$('controls').querySelector('[aria-label="Step k"]');if(k){k.max=state.n-1;k.value=state.k;$('controls').querySelector('[data-value="k"]').textContent=state.k;}}draw();save();});$('controls').append(wrap);}
+  function choices(key,values){for(const [v,label]of values)$('controls').append(button(label,()=>{state[key]=v;view();},state[key]===v));}
+  function presentation(){const lab=state.presentation==='lab';$('lab-surface').hidden=!lab;$('sequence-host').hidden=lab;$('sequences').setAttribute('aria-pressed',!lab);$('fields').setAttribute('aria-pressed',lab);$('count').hidden=!lab;window.SequenceStudio?.setVisible(!lab);}
+  function go(ch){state.chapter=ch;state.presentation='lab';view();save();}
+  function view(){
+    $('nav').replaceChildren(...names.map((n,i)=>button(String(i+1).padStart(2,'0')+' '+n,()=>go(i),state.chapter===i)));
+    $('title').textContent=chapters[state.chapter]?.title||'Different subjects, recurring structures';$('field').textContent=chapters[state.chapter]?.field||'A map of the connections';$('count').textContent=(state.chapter+1)+' / '+names.length;$('controls').replaceChildren();
+    $('prev').disabled=state.chapter===0;$('next').disabled=state.chapter===last;
+    const action=(label,fn)=>$('controls').append(button(label,()=>{fn();view();}));
+    switch(state.chapter){
+      case 0:choices('merge',[[false,'Three identities'],[true,'Two colours']]);break;
+      case 1:range('n','Positions n',3,12);range('k','Step k',0,state.n-1);range('tick','Repeated steps',0,36);break;
+      case 2:action('Rotate r',()=>{if(state.word.length<36)state.word.push('r');});action('Reflect s',()=>{if(state.word.length<36)state.word.push('s');});action('Undo',()=>state.word.pop());action('Identity',()=>state.word=[]);action('r then s',()=>state.word=['r','s']);action('s then r',()=>state.word=['s','r']);break;
+      case 3:choices('all',[[false,'Neighbour swaps'],[true,'Any two tokens']]);break;
+      case 4:action('Exchange 1 and 2',()=>{const a=state.board.indexOf(1),b=state.board.indexOf(2);[state.board[a],state.board[b]]=[state.board[b],state.board[a]];});action('Solved board',()=>state.board=defaults.board.slice());break;
+      case 5:choices('alpha',[[0,'Always move'],[0.5,'Half stay, half move']]);range('time','Steps',0,40);break;
+    }
+    presentation();draw();if(state.presentation==='lab')window.parent?.postMessage({type:'journeySelected',chapter:state.chapter},'*');
+  }
+  const NS='http://www.w3.org/2000/svg';
+  function svgEl(tag,attrs={},text=''){const e=document.createElementNS(NS,tag);for(const[k,v]of Object.entries(attrs))e.setAttribute(k,v);e.textContent=text;return e;}
+  function diagram(host,title,height=320){const W=Math.max(250,host.clientWidth),H=height,svg=svgEl('svg',{viewBox:`0 0 ${W} ${H}`,width:W,height:H,role:'img','aria-label':title,class:'diagram'});svg.append(svgEl('title',{},title));host.append(svg);return {svg,W,H};}
+  const line=(s,x1,y1,x2,y2,stroke='var(--border)',width=1.5,extra={})=>s.append(svgEl('line',{x1,y1,x2,y2,stroke,'stroke-width':width,...extra}));
+  const text=(s,x,y,v,anchor='middle')=>s.append(svgEl('text',{x,y,'text-anchor':anchor},v));
+  function dot(s,x,y,r,color,label){s.append(svgEl('circle',{cx:x,cy:y,r,fill:color,opacity:0.24}));if(label!==undefined)text(s,x,y+4,label);}
+  function path(s,points,color,width=2,dash=''){s.append(svgEl('path',{d:points.map((p,i)=>(i?'L':'M')+p.map(v=>v.toFixed(3)).join(',')).join(' '),stroke:color,fill:'none','stroke-width':width,'stroke-dasharray':dash}));}
+  function pane(title){const e=el('div');e.append(el('div',{class:'text-small'},title));$('visual').append(e);return e;}
+  function outputs(values,detail){$('readout').replaceChildren(...values.map(([k,v])=>{const d=el('span');d.append(k+': ',el('output',{'data-metric':k},String(v)));return d;}));$('detail').textContent=detail;}
+  function tokenRow(a,merged=false){const row=el('div');a.forEach(x=>row.append(el('span',{class:'token',style:'--token-color:'+C(merged&&x<2?0:x)},merged?(x<2?'A':'C'):String(x))));return row;}
+  function draw(){
+    $('visual').replaceChildren();$('visual').className='panes';$('visual').style.gridTemplateColumns=state.chapter===2&&root.clientWidth>650?'repeat(2,minmax(0,1fr))':'1fr';$('legend').replaceChildren();
+    const st=state;
+    if(st.chapter===0){const groups=M.colourClasses(st.merge),host=pane(st.merge?'Visible arrangements and their labelled versions':'All six labeled arrangements'),grid=el('div',{class:'arrangements'});groups.forEach(g=>{const d=el('div',{class:'orbit-group'});if(st.merge)d.append(el('strong',{},g.key));g.items.forEach(p=>d.append(tokenRow(p,st.merge)));d.append(el('span',{class:'text-small'},g.items.map(p=>p.join('')).join(' / ')));grid.append(d);});host.append(grid);outputs([['Labelled states',6],['Visible states',groups.length],['Versions per visible state',st.merge?2:1]],st.merge?'A and B look the same; their labelled versions are still listed under each visible arrangement.':'Identity labels 0, 1 and 2 remain distinguishable.');}
+    if(st.chapter===1){const host=pane('Adding '+st.k+' mod '+st.n),{svg,W,H}=diagram(host,'Loops made by adding k mod n'),r=Math.min(W/2-35,112),cx=W/2,cy=H/2,points=Array.from({length:st.n},(_,i)=>[cx+r*Math.sin(2*Math.PI*i/st.n),cy-r*Math.cos(2*Math.PI*i/st.n)]),orbits=M.clock(st.n,st.k);orbits.forEach((orbit,j)=>orbit.forEach(i=>{line(svg,...points[i],...points[(i+st.k)%st.n],C(j),1.5);dot(svg,...points[i],17,C(j),i);}));const current=M.mod(st.tick*st.k,st.n);svg.append(svgEl('circle',{cx:points[current][0],cy:points[current][1],r:22,fill:'none',stroke:'var(--foreground)','stroke-width':2}));outputs([['gcd(n,k)',M.gcd(st.n,st.k)],['Loops',orbits.length],['Loop length',st.n/M.gcd(st.n,st.k)],['Current position',current]],'Edges follow +'+st.k+' modulo '+st.n+'; the outlined position starts from 0.');}
+    if(st.chapter===2){const p=M.groupWord(st.word),host=pane('Triangle positions and identities'),{svg,W}=diagram(host,'Triangle turns and flips with labelled corners',280),rad=Math.min(W/2-38,95),pts=Array.from({length:3},(_,i)=>[W/2+rad*Math.sin(2*Math.PI*i/3),135-rad*Math.cos(2*Math.PI*i/3)]);path(svg,[...pts,pts[0]],'var(--border)');p.forEach((dest,source)=>{dot(svg,...pts[dest],23,C(source),source);text(svg,pts[dest][0],pts[dest][1]+38,'slot '+dest);});const mapHost=pane('Start to finish'),d=diagram(mapHost,'Start-to-finish arrows',280);for(let i=0;i<3;i++){const x=35+i*(d.W-70)/2,to=35+p[i]*(d.W-70)/2;line(d.svg,x,70,to,210,C(i),3);dot(d.svg,x,55,18,C(i),i);dot(d.svg,to,225,18,C(i),p[i]);}text(d.svg,d.W/2,20,'start');text(d.svg,d.W/2,267,'finish');outputs([['Moves in time order',st.word.join(' ')||'identity'],['Map','['+p.join(', ')+']']],st.word.length===36?'Sequence limit: 36 moves. Undo or return to identity.':'The word is read left to right in time; the arrows and the triangle show the same result.');}
+    if(st.chapter===3){const graph=M.stateGraph(st.all),route=M.shortest(graph,st.start),host=pane('Arrangements and allowed swaps'),{svg,W,H}=diagram(host,'Six arrangements and a shortest route',350),rad=Math.min(W/2-45,120),pts=graph.nodes.map((_,i)=>[W/2+rad*Math.sin(2*Math.PI*i/6),H/2-rad*Math.cos(2*Math.PI*i/6)]);graph.edges.forEach(e=>{const active=route.some((v,i)=>i&&((v===e.a&&route[i-1]===e.b)||(v===e.b&&route[i-1]===e.a)));line(svg,...pts[e.a],...pts[e.b],active?C(0):'var(--border)',active?3:1.5);});graph.nodes.forEach((p,i)=>dot(svg,...pts[i],23,i===st.start?C(0):'var(--foreground)',p.join('')));const picks=el('div',{class:'viz-row'});graph.nodes.forEach((p,i)=>picks.append(button(p.join(''),()=>{state.start=i;draw();},st.start===i)));host.append(picks);outputs([['States',6],['Edges',graph.edges.length],['Shortest moves',route.length-1]],route.map(i=>graph.nodes[i].join('')).join(' → '));}
+    if(st.chapter===4){const host=pane('3 × 3 sliding puzzle'),grid=el('div',{class:'tile-grid'});st.board.forEach((n,i)=>{const b=button('',()=>{state.board=M.slide(state.board,i);draw();});b.setAttribute('aria-label',n?'Move tile '+n:'Blank');b.append(el('span',{class:'tile-label'},n?String(n):'Blank'));b.disabled=M.slide(st.board,i).join('')===st.board.join('');grid.append(b);});host.append(grid);const inv=M.inversions(st.board);outputs([['Inversions',inv],['Parity',inv%2?'Odd':'Even'],['Reachable from solved',inv%2?'No':'Yes (standard 3 × 3)']],'Exchange 1 and 2 is an illegal edit, not a puzzle move.');}
+    if(st.chapter===5){const p=M.randomWalk(6,st.alpha,st.time),host=pane('Probability on a six-cycle'),{svg,W,H}=diagram(host,'Exact distribution after random-walk steps',330),rad=Math.min(W/2-55,104),pts=p.map((_,i)=>[W/2+rad*Math.sin(i*Math.PI/3),H/2-rad*Math.cos(i*Math.PI/3)]);pts.forEach((a,i)=>line(svg,...a,...pts[(i+1)%6]));p.forEach((v,i)=>{dot(svg,...pts[i],Math.sqrt(64+900*v),C(0),i);text(svg,pts[i][0],pts[i][1]+45,fmt(v));});outputs([['Total probability',fmt(p.reduce((a,b)=>a+b,0))],['Largest probability',fmt(Math.max(...p))],['Steps taken',st.time]],'Circle area minus its fixed baseline is proportional to probability; labels show each probability rounded to three decimal places.');}
+    if(st.chapter===last){const host=pane('Follow a connection'),list=el('div',{class:'connection-list'});M.connections.forEach(([a,b,label])=>{const row=el('div',{class:'route-link'});row.append(button(names[a],()=>go(a)),el('span',{class:'text-small'},label+' →'),button(names[b],()=>go(b)));list.append(row);});host.append(list);outputs([['Interactive chapters',last],['Explicit connections',M.connections.length]],'The full reading companion includes derivations, reflection prompts and further branches.');}
+  }
+  $('prev').addEventListener('click',()=>go(Math.max(0,state.chapter-1)));$('next').addEventListener('click',()=>go(Math.min(last,state.chapter+1)));
+  let width=0;new ResizeObserver(entries=>{const w=entries[0].contentRect.width;if(Math.abs(w-width)>1){width=w;draw();}}).observe($('visual'));
+  view();
+  $('sequences').onclick=()=>{state.presentation='sequence';presentation();save();};$('fields').onclick=()=>{state.presentation='lab';view();save();};
+  window.MathJourneyStudioSave=studio=>{state.studio=studio;save();};
+  window.MathJourneyBindStudio=()=>{window.SequenceStudio.restore(state.studio);presentation();};
+  window.MathJourneyTest={state:()=>JSON.parse(JSON.stringify(state)),select:go,restore:raw=>{state=normalizePresentation({...raw,presentation:raw.presentation||'lab'});view();},model:M};
+})();
+</script>
+<!-- SEQUENCE SCRIPT -->

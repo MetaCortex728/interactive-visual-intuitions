@@ -12,7 +12,7 @@
   function multiset(counts){const out=[];function walk(c,a){if(c.every(x=>x===0)){out.push(a);return;}c.forEach((x,i)=>{if(x){const next=c.slice();next[i]--;walk(next,[...a,i]);}});}walk(counts,[]);return out;}
   function applySwap(p,g){const q=p.slice();[q[g],q[g+1]]=[q[g+1],q[g]];return q;}
   function trace(word){const states=[[0,1,2]];word.forEach(g=>states.push(applySwap(states.at(-1),g)));return states;}
-  function s3(){const nodes=permutations([0,1,2]),edges=[];nodes.forEach((p,i)=>{for(let g=0;g<2;g++){const j=nodes.findIndex(q=>q.join('')===applySwap(p,g).join(''));if(i<j)edges.push({from:i,to:j,g});}});return {nodes,edges};}
+  function threeTokenGraph(){const nodes=permutations([0,1,2]),edges=[];nodes.forEach((p,i)=>{for(let g=0;g<2;g++){const j=nodes.findIndex(q=>q.join('')===applySwap(p,g).join(''));if(i<j)edges.push({from:i,to:j,g});}});return {nodes,edges};}
   const tree=(b,d)=>{let total=0n;for(let i=0;i<=d;i++)total+=BigInt(b)**BigInt(i);return total;};
   const cubeCount=()=>fact(8)*fact(12)*3n**7n*2n**11n/2n;
   const legal=(cornerTwists,edgeFlips,cp,ep)=>cornerTwists.reduce((a,b)=>a+b,0)%3===0&&edgeFlips.reduce((a,b)=>a+b,0)%2===0&&parity(cp)===parity(ep);
@@ -22,6 +22,6 @@
   function distances(g){if(g.n>9)throw Error('Exact state enumeration is limited to nine positions.');const key=a=>a.join(''),start=key(g.target),dist=new Map([[start,0]]),queue=[g.target];for(let j=0;j<queue.length;j++){const a=queue[j],d=dist.get(key(a));for(let i=0;i<g.edges.length;i++){const [u,v]=g.edges[i];if(a[u]===a[v])continue;const b=swapEdge(a,g.edges[i]),k=key(b);if(!dist.has(k)){dist.set(k,d+1);queue.push(b);}}}return dist;}
   function shortestNext(g,a,dist){const d=dist.get(a.join(''));return d===0?-1:g.edges.findIndex(e=>dist.get(swapEdge(a,e).join(''))===d-1);}
   function scramble(g,count=18,seed=37){let a=g.target.slice(),h=[];for(let j=0;j<count;j++){const eligible=g.edges.map((e,i)=>i).filter(i=>a[g.edges[i][0]]!==a[g.edges[i][1]]&&i!==h.at(-1));if(!eligible.length)break;seed=(Math.imul(seed,1664525)+1013904223)>>>0;const i=eligible[seed%eligible.length];a=swapEdge(a,g.edges[i]);h.push(i);}return h;}
-  const api={fact,choose,falling,permutations,unrank,cycles,parity,subsets,words,multiset,applySwap,trace,s3,tree,cubeCount,legal,lattice,swapEdge,boardFromHistory,distances,shortestNext,scramble};
+  const api={fact,choose,falling,permutations,unrank,cycles,parity,subsets,words,multiset,applySwap,trace,threeTokenGraph,tree,cubeCount,legal,lattice,swapEdge,boardFromHistory,distances,shortestNext,scramble};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.Possibility=api;
 })(typeof window!=='undefined'?window:globalThis);

@@ -15,7 +15,7 @@ for(let a=0;a<=3;a++)for(let b=0;b<=3;b++)for(let c=0;c<=3;c++){
 for(let k=0;k<=15;k++){let count=0;for(let a=0;a<=k;a++)for(let b=0;b<=k-a;b++)count++;check(BigInt(count)===M.choose(k+2,2));}
 check(M.trace([0,0]).at(-1).join()==='0,1,2');check(M.trace([0,1,0]).at(-1).join()===M.trace([1,0,1]).at(-1).join());
 for(let d=0;d<=7;d++){const words=M.words(2,d);check(words.length===2**d);check(words.every(w=>M.parity(M.trace(w).at(-1))===d%2));}
-check(M.s3().nodes.length===6&&M.s3().edges.length===6);
+check(M.threeTokenGraph().nodes.length===6&&M.threeTokenGraph().edges.length===6);
 check(M.cubeCount()===43252003274489856000n);
 const c=new Cube();for(const move of ['R','U','F','L','B','D','R2',"U'",'F2']){c.move(move);check(M.legal(c.co,c.eo,c.cp,c.ep));}
 const solved=new Cube(),tw=solved.co.slice(),fl=solved.eo.slice();tw[0]=1;fl[0]=1;

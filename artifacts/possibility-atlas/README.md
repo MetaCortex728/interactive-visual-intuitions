@@ -1,42 +1,27 @@
 # The Shape of Possibility
 
-Interactive study, 2026-10-28. Extends the earlier cube comparison with permutations, combinations, repeated colors, stars and bars, words versus states, cube invariants, search frontiers, and a default 1D-to-3D colored-token progression.
+Counting and rearrangement: permutations, combinations, repeated colours, stars and bars, words versus states, legal cube positions, and coloured tokens swapped on a line, a grid and a block of positions. Built as `dist/possibility-atlas.html` by `npm run build` from the repository root.
 
-## Open
+## Sources
 
-- `possibility-atlas-v1.html`: standalone export. Open directly in a browser; no server is needed. All mathematical data and runtime drawing logic are embedded. Tested with external network requests blocked.
-- Earlier cube study (`../cube-permutation-study/`): sourced human solve, comparison routes and linked cube views.
-- `DERIVATIONS.md`: reopenable local companion notes and source links. This file is the authored export source.
+- `DERIVATIONS.md`: plain-language notes behind each view, with a few source links.
+- The corner and edge permutations for the cube moves `R`, `U` and `R U R' U'` are generated with the cubejs engine vendored in `../cube-permutation-study/vendor/`.
 
-The 1D and nine-position models use exact BFS. The same-nine example is CCCBBBAAA to ABCABCABC: 18 swaps on the line versus 8 on the grid. The 27-position lattice only provides a transport lower bound and reverse-history upper bound. It is not a Rubik's Cube and does not claim optimal solutions.
+## How the data is built
 
-## Source and Checks
+- `model.cjs`: exact counting and swap-distance model.
+- `visual.template.html`: page source.
+- `build.cjs`: embeds the model and those cube permutations in the template and writes the fragment to `output/possibility-atlas.html`; `npm run build` wraps it in the shared page shell. All data and drawing code are embedded, so the page needs no network.
 
-- `model.cjs`: exact counting and transition model.
-- `visual.template.html`: editable presentation source.
-- `build.cjs`: embeds the model and position permutations generated using the existing vendored cubejs dependency.
-- `test.cjs`: 34,044 passing assertions, including exhaustive small-state distances, independent inversion parity, combinatorial identities and inverse replay.
-- `test-browser.cjs`: passing Edge/Playwright interaction checks for eight views at 1100, 390 and 320 pixels; maximum control values; state restoration; fixed-nine boards; manual and optimal swaps; theme and reduced-motion checks. Browser errors and measured overflow/label-bound violations: zero.
-- `desktop.png`, `mobile.png`, `mobile-derivation.png`, `dimensions-dark.png`: captured views. Mobile derivations were separately inspected after scrolling, since a full-page screenshot need not paint every offscreen iframe region.
+Distances on the 3-position line and the 9-position line and grid come from exact breadth-first search. The fixed comparison takes the same nine colours from CCCBBBAAA to ABCABCABC: 18 swaps on the line against 8 on the grid. For the 27-position block, the page shows only a lower bound (how far tokens must travel) and an upper bound (undoing the recorded swaps); it does not claim optimal solutions there, and the block is not a Rubik's Cube.
 
-The generator complexity table describes algorithms with an explicit-output contract, not benchmarked browser complexity. Some bounded UI enumerators materialize all results.
+## Checks
 
-## Rebuild
+- `test.cjs`: 34,044 assertions, including exhaustive small-state distances, an independent inversion-parity check, counting identities and inverse replay.
+- `test-browser.cjs`: headless Chromium against the built page with HTTP(S) blocked: the seven views at 1100, 390 and 320 pixels, maximum control values, saved-state restore (from another window and on reopening), the fixed nine-token boards, manual and optimal swaps, light and dark schemes, and reduced motion. It fails on any page error, horizontal overflow or label outside its drawing. Results and screenshots go to `output/browser/possibility-atlas/`.
 
-From the repository root, run each command separately:
+Run them on their own from the repository root with `node artifacts/possibility-atlas/test.cjs` and, after `npm run build`, `node artifacts/possibility-atlas/test-browser.cjs`.
 
-```powershell
-node artifacts/possibility-atlas/build.cjs
-(Rendered with the Codex visualization renderer, which is not part of this repository.)
-node artifacts/possibility-atlas/test.cjs
-node artifacts/possibility-atlas/test-browser.cjs
-```
+## Limits
 
-The browser test uses the installed bundled Playwright and Edge. A restricted environment may require permission to launch the isolated browser profile. No user browser profile is used by these tests.
-
-## Delivery Evidence
-
-Local HTML SHA-256: `30071536160ebc1f3fad94795f2d794e0fcc3eb8775eb95b3c032f970180e0a7`.
-
-
-Nothing was publicly hosted or made public.
+Results are for the fixed small boards shown; they say nothing general about larger boards. How well the page helps learners has not been measured.
